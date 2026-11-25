@@ -1,9 +1,9 @@
 import { type Habit, type HabitStatus, trackHabits } from "@shared/habits";
 import { filterSessions, type SessionFilter, type TrainingSession } from "@shared/training";
-import { TRAININGS, trainingById } from "@shared/trainings";
+import { TRAININGS } from "@shared/trainings";
 import { scoreTrends, type Trend } from "@shared/trends";
 import { useCallback, useEffect, useState } from "react";
-import { Segmented } from "./components/fields";
+import { Field, Segmented } from "./components/fields";
 import { SessionRow } from "./SessionRow";
 import { shortDate } from "./text";
 
@@ -56,13 +56,23 @@ export function History({ onOpenSession }: { onOpenSession: (id: string) => void
         ) : (
           <>
             <div className="filters">
-              <Segmented
-                label="Training"
-                options={["all", ...TRAININGS.map((t) => t.id)]}
-                value={filter.training}
-                onChange={(training) => setFilter({ ...filter, training })}
-                labelOf={(id) => (id === "all" ? "All" : (trainingById(id)?.title ?? id))}
-              />
+              <Field label="Training">
+                {(id) => (
+                  <select
+                    id={id}
+                    className="narrow"
+                    value={filter.training}
+                    onChange={(e) => setFilter({ ...filter, training: e.target.value })}
+                  >
+                    <option value="all">All trainings</option>
+                    {TRAININGS.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.title}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </Field>
               <Segmented
                 label="Status"
                 options={["all", "open", "finished"] as const}

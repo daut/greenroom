@@ -1356,6 +1356,7 @@ textarea {
 .filters {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-end;
   gap: 12px 28px;
 }
 
@@ -1372,9 +1373,12 @@ textarea {
   border-top: var(--rule-w) solid var(--ink);
 }
 
-.finish-line .btn,
-.finish-line .link {
+.finish-line .btn {
   margin-left: auto;
+}
+
+.page-header .link.reopen {
+  margin-left: 0;
 }
 
 .row-with-action {

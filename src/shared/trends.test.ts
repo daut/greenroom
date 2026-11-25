@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Report } from "./report";
-import type { TrainingDefinition, TrainingSession } from "./training";
+import type { ReportPhase, TrainingDefinition, TrainingSession } from "./training";
 import { latestScore, scoreTrends } from "./trends";
 
 const def: TrainingDefinition = {
@@ -86,6 +86,17 @@ describe("latestScore", () => {
     const s = session("a", [report("2026-11-25T10:00:00Z", 4), report("2026-11-10T10:00:00Z", 2)]);
 
     expect(latestScore(def, s)).toBe(4);
+  });
+
+  it("comes from the first report phase, not later side reports like drill notes", () => {
+    const withDrill: TrainingDefinition = {
+      ...def,
+      phases: [...def.phases, { ...(def.phases[1] as ReportPhase), id: "notes" }],
+    };
+    const s = session("a", [report("2026-11-10T10:00:00Z", 2)]);
+    s.artifacts.notes = { x: report("2026-11-25T10:00:00Z", 5) };
+
+    expect(latestScore(withDrill, s)).toBe(2);
   });
 
   it("is null before anything is scored", () => {
