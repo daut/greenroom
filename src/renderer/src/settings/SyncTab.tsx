@@ -93,18 +93,18 @@ export function SyncTab({ settings, update }: { settings: Settings; update: Upda
                   })
                 }
               >
-                {codeSent ? "Send again" : "Email me a code"}
+                {codeSent ? "Send again" : "Email me a sign-in"}
               </button>
             </div>
             {codeSent && (
               <div className="key-controls">
                 <label className="visually-hidden" htmlFor="sync-code">
-                  Code
+                  Code or link
                 </label>
                 <input
                   id="sync-code"
-                  inputMode="numeric"
-                  placeholder="6-digit code from the email"
+                  spellCheck={false}
+                  placeholder="6-digit code, or paste the whole link from the email"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                 />

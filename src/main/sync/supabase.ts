@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { writeFileAtomic } from "../fs-utils";
 import type { Cipher } from "../key-store";
 import type { RemoteRow, SyncRemote } from "./engine";
+import { parseSignInInput } from "./sign-in-input";
 
 const TABLE = "training_sessions";
 const BUCKET = "recordings";
@@ -30,10 +31,21 @@ export function createSupabase(
       );
       if (error) throw new Error(error.message);
     },
-    async verifyCode(email: string, token: string) {
-      const { error } = await reachable(() =>
-        client.auth.verifyOtp({ email, token, type: "email" }),
-      );
+    /** Accepts the emailed 6-digit code or the whole emailed link. */
+    async verifyCode(email: string, pasted: string) {
+      const input = parseSignInInput(pasted);
+      const { error } = await reachable(() => {
+        if (input.kind === "session") {
+          return client.auth.setSession({
+            access_token: input.accessToken,
+            refresh_token: input.refreshToken,
+          });
+        }
+        if (input.kind === "token_hash") {
+          return client.auth.verifyOtp({ token_hash: input.tokenHash, type: input.type });
+        }
+        return client.auth.verifyOtp({ email, token: input.code, type: "email" });
+      });
       if (error) throw new Error(error.message);
     },
     async signOut() {
