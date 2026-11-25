@@ -30,8 +30,8 @@ brew tap daut/tap && brew trust daut/tap
 brew install --cask greenroom
 ```
 
-Homebrew prints an `xattr` command to run once before the first launch (the app isn't signed with
-an Apple Developer ID yet).
+Homebrew prints an `xattr` command to run once before the first launch (the app is ad-hoc signed,
+not notarized by Apple).
 
 ## Setup
 
@@ -89,9 +89,9 @@ npm run icon       # re-render build/icon.png
 ```
 
 Releases: bump `version` in `package.json`, tag `vX.Y.Z`, push the tag. CI builds macOS and Linux
-artifacts, writes `SHA256SUMS`, creates the GitHub Release and renders the Homebrew cask as a
-workflow artifact; copy it to `Casks/greenroom.rb` in
-[daut/homebrew-tap](https://github.com/daut/homebrew-tap).
+artifacts, writes `SHA256SUMS`, creates the GitHub Release, renders the Homebrew cask and pushes
+it to `Casks/greenroom.rb` in [daut/homebrew-tap](https://github.com/daut/homebrew-tap) (via the
+`TAP_DEPLOY_KEY` secret, a write deploy key on the tap).
 
 ### Adding a training
 
@@ -100,7 +100,7 @@ add it to `TRAININGS` in `src/shared/trainings/index.ts`. Phases:
 
 | Kind | What it does |
 |---|---|
-| `form` | Fields (text, long text, or documents importable from PDF/TXT/Markdown) |
+| `form` | Fields (text, long text, or documents importable from PDF/TXT/Markdown or a web link) |
 | `generate` | Structured text output (zod schema) from earlier artifacts, listed on screen |
 | `cards` | Study cards with drafts, written feedback and confidence |
 | `voice` | A realtime voice session; optional `choices`, `frame` (who the voice plays) and `listenFirst` (listen until handed over) |

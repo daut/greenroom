@@ -64,3 +64,18 @@ jobs:
         with:
           name: homebrew-cask
           path: greenroom.rb
+      - name: Push cask to daut/homebrew-tap
+        env:
+          TAP_DEPLOY_KEY: ${{ secrets.TAP_DEPLOY_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$TAP_DEPLOY_KEY" > ~/.ssh/tap && chmod 600 ~/.ssh/tap
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/tap -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+          git clone --depth 1 git@github.com:daut/homebrew-tap.git tap
+          cp greenroom.rb tap/Casks/greenroom.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/greenroom.rb
+          git diff --cached --quiet || git commit -m "greenroom ${GITHUB_REF_NAME#v}"
+          git push
