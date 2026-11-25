@@ -18,6 +18,15 @@ export interface Trend {
   points: TrendPoint[];
 }
 
+/** Overall score of the session's most recent report, across its report phases. */
+export function latestScore(def: TrainingDefinition, session: TrainingSession): number | null {
+  const reports = def.phases
+    .filter((p) => p.kind === "report")
+    .flatMap((p) => Object.values((session.artifacts[p.id] as ReportArtifact | undefined) ?? {}));
+  const latest = reports.sort((a, b) => b.runAt.localeCompare(a.runAt))[0];
+  return latest ? latest.overall : null;
+}
+
 /** One chronological series per report phase, across all sessions. */
 export function scoreTrends(sessions: TrainingSession[], trainings: TrainingDefinition[]): Trend[] {
   const trends: Trend[] = [];

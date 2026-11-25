@@ -139,6 +139,15 @@ export interface TrainingSession {
   updatedAt: string;
   artifacts: Record<string, unknown>;
   done: string[];
+  /** Set when the user marks the session done; it then leaves Continue on Home. */
+  finishedAt?: string;
+}
+
+export type SessionStatus = "open" | "finished";
+
+export interface SessionFilter {
+  training: string | "all";
+  status: SessionStatus | "all";
 }
 
 export interface PhaseContext {
@@ -200,6 +209,31 @@ export function saveArtifact(
 
 export function nextPhase(def: TrainingDefinition, session: TrainingSession): Phase | null {
   return def.phases.find((p) => phaseState(def, session, p.id) === "ready") ?? null;
+}
+
+export function isFinished(session: TrainingSession): boolean {
+  return Boolean(session.finishedAt);
+}
+
+export function finishSession(session: TrainingSession, now = new Date()): TrainingSession {
+  const at = now.toISOString();
+  return { ...session, finishedAt: at, updatedAt: at };
+}
+
+export function reopenSession(session: TrainingSession, now = new Date()): TrainingSession {
+  const { finishedAt: _, ...rest } = session;
+  return { ...rest, updatedAt: now.toISOString() };
+}
+
+export function filterSessions(
+  sessions: TrainingSession[],
+  filter: SessionFilter,
+): TrainingSession[] {
+  return sessions.filter(
+    (s) =>
+      (filter.training === "all" || s.trainingId === filter.training) &&
+      (filter.status === "all" || (filter.status === "finished") === isFinished(s)),
+  );
 }
 
 export function contextOf(session: TrainingSession): PhaseContext {

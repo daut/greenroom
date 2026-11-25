@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Report } from "./report";
 import type { TrainingDefinition, TrainingSession } from "./training";
-import { scoreTrends } from "./trends";
+import { latestScore, scoreTrends } from "./trends";
 
 const def: TrainingDefinition = {
   id: "interview",
@@ -78,5 +78,17 @@ describe("scoreTrends", () => {
         [def],
       ),
     ).toEqual([]);
+  });
+});
+
+describe("latestScore", () => {
+  it("is the overall score of the most recent report in the session", () => {
+    const s = session("a", [report("2026-11-25T10:00:00Z", 4), report("2026-11-10T10:00:00Z", 2)]);
+
+    expect(latestScore(def, s)).toBe(4);
+  });
+
+  it("is null before anything is scored", () => {
+    expect(latestScore(def, session("a", []))).toBeNull();
   });
 });

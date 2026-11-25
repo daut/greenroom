@@ -1,14 +1,22 @@
 import { type Habit, type HabitStatus, trackHabits } from "@shared/habits";
-import type { TrainingSession } from "@shared/training";
-import { TRAININGS } from "@shared/trainings";
+import { filterSessions, type SessionFilter, type TrainingSession } from "@shared/training";
+import { TRAININGS, trainingById } from "@shared/trainings";
 import { scoreTrends, type Trend } from "@shared/trends";
 import { useCallback, useEffect, useState } from "react";
-import { SessionRow } from "./Home";
+import { Segmented } from "./components/fields";
+import { SessionRow } from "./SessionRow";
 import { shortDate } from "./text";
+
+const STATUS_LABEL: Record<SessionFilter["status"], string> = {
+  all: "All",
+  open: "In progress",
+  finished: "Finished",
+};
 
 export function History({ onOpenSession }: { onOpenSession: (id: string) => void }) {
   const [sessions, setSessions] = useState<TrainingSession[] | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
+  const [filter, setFilter] = useState<SessionFilter>({ training: "all", status: "all" });
 
   const load = useCallback(() => window.greenroom.sessions.list().then(setSessions), []);
   useEffect(() => {
@@ -17,6 +25,7 @@ export function History({ onOpenSession }: { onOpenSession: (id: string) => void
 
   if (!sessions) return null;
   const trends = scoreTrends(sessions, TRAININGS);
+  const shown = filterSessions(sessions, filter);
 
   const remove = async (id: string) => {
     await window.greenroom.sessions.remove(id);
@@ -45,27 +54,35 @@ export function History({ onOpenSession }: { onOpenSession: (id: string) => void
         {sessions.length === 0 ? (
           <p className="muted">No sessions yet. Start one from Home.</p>
         ) : (
-          <ul className="cards">
-            {sessions.map((s) => (
-              <li key={s.id} className="row-with-action">
-                <SessionRow session={s} onOpen={() => onOpenSession(s.id)} />
-                {confirm === s.id ? (
-                  <span className="confirm">
-                    <button type="button" className="btn danger" onClick={() => remove(s.id)}>
-                      Delete
-                    </button>
-                    <button type="button" className="btn" onClick={() => setConfirm(null)}>
-                      Keep
-                    </button>
-                  </span>
-                ) : (
-                  <button type="button" className="link" onClick={() => setConfirm(s.id)}>
-                    Delete
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
+          <>
+            <div className="filters">
+              <Segmented
+                label="Training"
+                options={["all", ...TRAININGS.map((t) => t.id)]}
+                value={filter.training}
+                onChange={(training) => setFilter({ ...filter, training })}
+                labelOf={(id) => (id === "all" ? "All" : (trainingById(id)?.title ?? id))}
+              />
+              <Segmented
+                label="Status"
+                options={["all", "open", "finished"] as const}
+                value={filter.status}
+                onChange={(status) => setFilter({ ...filter, status })}
+                labelOf={(status) => STATUS_LABEL[status]}
+              />
+            </div>
+            {shown.length === 0 ? (
+              <p className="muted">No sessions match these filters.</p>
+            ) : (
+              <SessionList
+                sessions={shown}
+                confirm={confirm}
+                onConfirm={setConfirm}
+                onOpenSession={onOpenSession}
+                onRemove={remove}
+              />
+            )}
+          </>
         )}
       </div>
     </section>
@@ -101,6 +118,44 @@ function HabitList({ title, habits }: { title: string; habits: Habit[] }) {
         ))}
       </ol>
     </div>
+  );
+}
+
+function SessionList({
+  sessions,
+  confirm,
+  onConfirm,
+  onOpenSession,
+  onRemove,
+}: {
+  sessions: TrainingSession[];
+  confirm: string | null;
+  onConfirm: (id: string | null) => void;
+  onOpenSession: (id: string) => void;
+  onRemove: (id: string) => void;
+}) {
+  return (
+    <ul className="cards">
+      {sessions.map((s) => (
+        <li key={s.id} className="row-with-action">
+          <SessionRow session={s} onOpen={() => onOpenSession(s.id)} />
+          {confirm === s.id ? (
+            <span className="confirm">
+              <button type="button" className="btn danger" onClick={() => onRemove(s.id)}>
+                Delete
+              </button>
+              <button type="button" className="btn" onClick={() => onConfirm(null)}>
+                Keep
+              </button>
+            </span>
+          ) : (
+            <button type="button" className="link" onClick={() => onConfirm(s.id)}>
+              Delete
+            </button>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
 

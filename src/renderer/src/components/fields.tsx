@@ -24,11 +24,13 @@ export function Segmented<T extends string>({
   options,
   value,
   onChange,
+  labelOf = (option) => option,
 }: {
   label: string;
   options: readonly T[];
   value: T;
   onChange: (value: T) => void;
+  labelOf?: (option: T) => string;
 }) {
   const name = useId();
   return (
@@ -44,7 +46,7 @@ export function Segmented<T extends string>({
               checked={value === option}
               onChange={() => onChange(option)}
             />
-            {option}
+            {labelOf(option)}
           </label>
         ))}
       </div>

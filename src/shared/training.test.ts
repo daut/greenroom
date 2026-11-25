@@ -2,9 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   completePhase,
   contextOf,
+  filterSessions,
+  finishSession,
+  isFinished,
   newSession,
   nextPhase,
   phaseState,
+  reopenSession,
   saveArtifact,
   type TrainingDefinition,
 } from "./training";
@@ -98,5 +102,41 @@ describe("contextOf", () => {
 
     expect(contextOf(s).artifact<{ company: string }>("setup")?.company).toBe("Acme");
     expect(contextOf(s).artifact("missing")).toBeUndefined();
+  });
+});
+
+describe("finishing a session", () => {
+  it("is explicit, bumps updatedAt so sync picks it up, and can be undone", () => {
+    const s = newSession(def, "id1", T0);
+    expect(isFinished(s)).toBe(false);
+
+    const finished = finishSession(s, T1);
+    expect(isFinished(finished)).toBe(true);
+    expect(finished.finishedAt).toBe(T1.toISOString());
+    expect(finished.updatedAt).toBe(T1.toISOString());
+
+    const reopened = reopenSession(finished, T1);
+    expect(isFinished(reopened)).toBe(false);
+    expect(reopened).not.toHaveProperty("finishedAt");
+  });
+
+  it("stays finished when a phase is redone", () => {
+    const s = finishSession(newSession(def, "id1", T0), T0);
+
+    expect(isFinished(completePhase(def, s, "setup", {}, T1))).toBe(true);
+  });
+});
+
+describe("filterSessions", () => {
+  const interview = { ...newSession(def, "i", T0), trainingId: "interview" };
+  const english = finishSession({ ...newSession(def, "e", T0), trainingId: "english" }, T1);
+  const all = [interview, english];
+
+  it("filters by training and status, keeping order", () => {
+    expect(filterSessions(all, { training: "all", status: "all" })).toEqual(all);
+    expect(filterSessions(all, { training: "english", status: "all" })).toEqual([english]);
+    expect(filterSessions(all, { training: "all", status: "open" })).toEqual([interview]);
+    expect(filterSessions(all, { training: "all", status: "finished" })).toEqual([english]);
+    expect(filterSessions(all, { training: "interview", status: "finished" })).toEqual([]);
   });
 });

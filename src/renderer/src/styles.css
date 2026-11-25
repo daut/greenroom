@@ -1342,6 +1342,41 @@ textarea {
   background: var(--masthead);
 }
 
+.row-status {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.row-score {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+}
+
+.filters .segmented label {
+  text-transform: none;
+}
+
+.finish-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  padding-top: 18px;
+  border-top: var(--rule-w) solid var(--ink);
+}
+
+.finish-line .btn,
+.finish-line .link {
+  margin-left: auto;
+}
+
 .row-with-action {
   display: flex;
   align-items: center;

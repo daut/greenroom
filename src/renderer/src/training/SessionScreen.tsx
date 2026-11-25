@@ -1,14 +1,23 @@
 import type { ReportArtifact } from "@shared/report";
-import { nextPhase, type Phase, phaseState, type TrainingDefinition } from "@shared/training";
+import {
+  finishSession,
+  isFinished,
+  nextPhase,
+  type Phase,
+  phaseState,
+  reopenSession,
+  type TrainingDefinition,
+  type TrainingSession,
+} from "@shared/training";
 import { trainingById } from "@shared/trainings";
 import { useEffect, useState } from "react";
-import { roman } from "../text";
+import { roman, shortDate } from "../text";
 import { CardsPhaseView } from "./CardsPhaseView";
 import { DrillsPhaseView } from "./DrillsPhaseView";
 import { FormPhaseView } from "./FormPhaseView";
 import { GeneratePhaseView } from "./GeneratePhaseView";
 import { ReportPhaseView } from "./ReportPhaseView";
-import { useTrainingSession } from "./useTrainingSession";
+import { type UpdateSession, useTrainingSession } from "./useTrainingSession";
 import { VoicePhaseView } from "./VoicePhaseView";
 
 const STATE_STAMP = {
@@ -50,6 +59,7 @@ export function SessionScreen({ id, onBack }: { id: string; onBack: () => void }
     <section className="page wide">
       <header className="page-header">
         <h1 className="page-title">{session.title}</h1>
+        {isFinished(session) && <span className="stamp ok">Finished</span>}
         <button type="button" className="link" onClick={onBack}>
           All sessions
         </button>
@@ -102,6 +112,9 @@ export function SessionScreen({ id, onBack }: { id: string; onBack: () => void }
                 setSelected(phaseId);
               }}
             />
+            {isLastOpenAct(def, session, current) && (
+              <FinishLine session={session} update={update} />
+            )}
           </div>
         )}
       </div>
@@ -162,4 +175,31 @@ function PhaseView({
     case "drills":
       return <DrillsPhaseView {...shared} phase={phase} initialTarget={drillTarget} />;
   }
+}
+
+function isLastOpenAct(def: TrainingDefinition, session: TrainingSession, phase: Phase): boolean {
+  return phase.id === def.phases.at(-1)?.id && phaseState(def, session, phase.id) !== "locked";
+}
+
+/** Marking a session done is the user's call; it takes the session off Continue on Home. */
+function FinishLine({ session, update }: { session: TrainingSession; update: UpdateSession }) {
+  if (session.finishedAt) {
+    return (
+      <div className="finish-line">
+        <span className="stamp ok">Finished</span>
+        <span className="muted">Marked done on {shortDate(session.finishedAt)}.</span>
+        <button type="button" className="link" onClick={() => update((s) => reopenSession(s))}>
+          Reopen
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className="finish-line">
+      <span className="muted">Done rehearsing? It moves from Continue to Recently finished.</span>
+      <button type="button" className="btn primary" onClick={() => update((s) => finishSession(s))}>
+        Mark session done
+      </button>
+    </div>
+  );
 }

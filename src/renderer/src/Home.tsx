@@ -1,27 +1,33 @@
 import { estimateSessionCostUsd } from "@shared/billing";
 import { PROVIDER_INFO } from "@shared/keys";
 import { activePersona, type Settings } from "@shared/settings";
-import { newSession, phaseState, type TrainingSession } from "@shared/training";
+import { isFinished, newSession, type TrainingSession } from "@shared/training";
 import { TRAININGS, trainingById } from "@shared/trainings";
 import { type ReactNode, useEffect, useState } from "react";
 import { type KeyState, useKeyStates } from "./keyStatus";
-import { capitalize, formatUsd, shortDate } from "./text";
+import { SessionRow } from "./SessionRow";
+import { capitalize, formatUsd } from "./text";
 
 export function Home({
   onOpenSettings,
   onOpenSession,
+  onOpenHistory,
 }: {
   onOpenSettings: () => void;
   onOpenSession: (id: string) => void;
+  onOpenHistory: () => void;
 }) {
   const keys = useKeyStates();
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [recent, setRecent] = useState<TrainingSession[]>([]);
+  const [sessions, setSessions] = useState<TrainingSession[]>([]);
 
   useEffect(() => {
     window.greenroom.settings.get().then(setSettings);
-    window.greenroom.sessions.list().then((all) => setRecent(all.slice(0, 4)));
+    window.greenroom.sessions.list().then(setSessions);
   }, []);
+
+  const inProgress = sessions.filter((s) => !isFinished(s)).slice(0, 4);
+  const finished = recentlyFinished(sessions).slice(0, 3);
 
   const start = async (trainingId: string) => {
     const def = trainingById(trainingId);
@@ -43,16 +49,10 @@ export function Home({
         />
       )}
 
-      {recent.length > 0 && (
+      {inProgress.length > 0 && (
         <div className="programme">
           <h2 className="section-title">Continue</h2>
-          <ul className="cards">
-            {recent.map((s) => (
-              <li key={s.id}>
-                <SessionRow session={s} onOpen={() => onOpenSession(s.id)} />
-              </li>
-            ))}
-          </ul>
+          <SessionList sessions={inProgress} onOpenSession={onOpenSession} />
         </div>
       )}
 
@@ -74,27 +74,45 @@ export function Home({
         </ol>
       </div>
 
+      {finished.length > 0 && (
+        <div className="programme">
+          <div className="programme-head">
+            <h2 className="section-title">Recently finished</h2>
+            <button type="button" className="link" onClick={onOpenHistory}>
+              All sessions
+            </button>
+          </div>
+          <SessionList sessions={finished} onOpenSession={onOpenSession} />
+        </div>
+      )}
+
       {settings && <Billing settings={settings} onOpenSettings={onOpenSettings} />}
     </section>
   );
 }
 
-export function SessionRow({ session, onOpen }: { session: TrainingSession; onOpen: () => void }) {
-  const def = trainingById(session.trainingId);
-  const total = def?.phases.length ?? 0;
-  const done = def ? def.phases.filter((p) => phaseState(def, session, p.id) === "done").length : 0;
+function SessionList({
+  sessions,
+  onOpenSession,
+}: {
+  sessions: TrainingSession[];
+  onOpenSession: (id: string) => void;
+}) {
   return (
-    <button type="button" className="card-row" onClick={onOpen}>
-      <span className="script-speaker">{shortDate(session.updatedAt)}</span>
-      <span className="card-prompt">
-        {session.title}
-        <span className="item-detail">{def?.title ?? session.trainingId}</span>
-      </span>
-      <span className={done === total && total > 0 ? "stamp ok" : "stamp pending"}>
-        {done} of {total} acts
-      </span>
-    </button>
+    <ul className="cards">
+      {sessions.map((s) => (
+        <li key={s.id}>
+          <SessionRow session={s} onOpen={() => onOpenSession(s.id)} />
+        </li>
+      ))}
+    </ul>
   );
+}
+
+function recentlyFinished(sessions: TrainingSession[]): TrainingSession[] {
+  return sessions
+    .filter(isFinished)
+    .sort((a, b) => (b.finishedAt ?? "").localeCompare(a.finishedAt ?? ""));
 }
 
 function KeyNotice({ keys, onOpenSettings }: { keys: KeyState[]; onOpenSettings: () => void }) {

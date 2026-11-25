@@ -52,7 +52,11 @@ export function App() {
       </nav>
       <main className="content">
         {view.page === "home" && (
-          <Home onOpenSettings={() => go("settings")} onOpenSession={openSession} />
+          <Home
+            onOpenSettings={() => go("settings")}
+            onOpenSession={openSession}
+            onOpenHistory={() => go("history")}
+          />
         )}
         {view.page === "history" && <History onOpenSession={openSession} />}
         {view.page === "session" && (
