@@ -1,0 +1,26 @@
+cask "greenroom" do
+  arch arm: "arm64", intel: "x64"
+
+  version "@VERSION@"
+  sha256 arm:   "@SHA_ARM64@",
+         intel: "@SHA_X64@"
+
+  url "https://github.com/daut/greenroom/releases/download/v#{version}/greenroom-mac-#{arch}.zip"
+  name "Greenroom"
+  desc "Personal interview and presentation trainer with realtime voice mock sessions"
+  homepage "https://github.com/daut/greenroom"
+
+  depends_on macos: ">= :monterey"
+
+  app "Greenroom.app"
+
+  # Unsigned build: clear quarantine so Gatekeeper allows the first launch.
+  postflight do
+    system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{appdir}/Greenroom.app"]
+  end
+
+  zap trash: [
+    "~/Library/Application Support/Greenroom",
+    "~/Library/Preferences/dev.daut.greenroom.plist",
+  ]
+end

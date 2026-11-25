@@ -1,0 +1,35 @@
+import { describePersona } from "./billing";
+import type { Persona } from "./settings";
+
+const TONE: Record<Persona["style"], string> = {
+  friendly: "Warm and encouraging, but still asks real questions.",
+  neutral: "Professional and even. Neither warm nor cold.",
+  tough: "Skeptical and direct. Push back on vague answers and ask for specifics and numbers.",
+};
+
+const INTERRUPTIONS: Record<Persona["interruptions"], string> = {
+  none: "Never interrupt. Wait until the candidate has clearly finished.",
+  some: "If an answer rambles past about two minutes, politely steer it back.",
+  frequent: "Cut in when an answer drifts or stays abstract, as a busy interviewer would.",
+};
+
+/** System instructions for the realtime interviewer voice. */
+const INTERVIEW_FRAME =
+  "You are the interviewer in a spoken job-interview rehearsal. The user is the candidate.";
+
+export function interviewerInstructions(
+  persona: Persona,
+  task: string,
+  frame: string = INTERVIEW_FRAME,
+): string {
+  return [
+    frame,
+    `Persona: ${describePersona(persona)}`,
+    `Tone: ${TONE[persona.style]}`,
+    `Turn-taking: ${INTERRUPTIONS[persona.interruptions]}`,
+    `Speak only ${persona.language}. Keep each turn short, like a real interviewer: one question at a time.`,
+    "Do not coach, grade, or give feedback during the session. Stay in character.",
+    `Task: ${task}`,
+    "When the task is complete, say one short closing sentence, then call end_session. Never call it earlier.",
+  ].join("\n");
+}

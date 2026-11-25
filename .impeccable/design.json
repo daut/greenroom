@@ -1,0 +1,452 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-24T22:57:57.115Z",
+  "title": "Design System: Greenroom",
+  "extensions": {
+    "colorMeta": {
+      "masthead": {
+        "role": "primary",
+        "displayName": "Programme Masthead Yellow",
+        "canonical": "oklch(83.4% 0.158 89.0)",
+        "tonalRamp": [
+          "#180700",
+          "#392100",
+          "#5f3f00",
+          "#875f00",
+          "#ae8200",
+          "#cfa93d",
+          "#eece79",
+          "#ffeca5"
+        ]
+      },
+      "masthead-deep": {
+        "role": "primary",
+        "displayName": "Pressed Masthead",
+        "canonical": "oklch(75.6% 0.152 87.1)",
+        "tonalRamp": [
+          "#180700",
+          "#3a2100",
+          "#5f3e00",
+          "#875e00",
+          "#af8100",
+          "#d0a844",
+          "#efcd7d",
+          "#ffeba8"
+        ]
+      },
+      "on-masthead-muted": {
+        "role": "primary",
+        "displayName": "Masthead Shadow Text",
+        "canonical": "oklch(36.7% 0.071 91.0)",
+        "tonalRamp": [
+          "#100a00",
+          "#2e250a",
+          "#504421",
+          "#74653a",
+          "#998858",
+          "#bcad84",
+          "#ddd0ad",
+          "#f9eecf"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Programme Ink",
+        "canonical": "oklch(19.1% 0.000 89.9)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
+        ]
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Soft Ink",
+        "canonical": "oklch(34.7% 0.007 106.7)",
+        "tonalRamp": [
+          "#0b0b0a",
+          "#272724",
+          "#454542",
+          "#666662",
+          "#898985",
+          "#aeaeaa",
+          "#d1d1ce",
+          "#efefec"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Faded Ink",
+        "canonical": "oklch(48.0% 0.009 106.7)",
+        "tonalRamp": [
+          "#0b0b09",
+          "#272723",
+          "#454541",
+          "#666661",
+          "#8a8a83",
+          "#aeaea9",
+          "#d1d1cc",
+          "#efefea"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Hairline Rule",
+        "canonical": "oklch(89.2% 0.011 106.6)",
+        "tonalRamp": [
+          "#0b0b09",
+          "#272723",
+          "#454540",
+          "#666660",
+          "#8a8a83",
+          "#aeaea8",
+          "#d1d1cc",
+          "#efefea"
+        ]
+      },
+      "leader": {
+        "role": "neutral",
+        "displayName": "Leader Dots",
+        "canonical": "oklch(71.3% 0.011 106.7)",
+        "tonalRamp": [
+          "#0b0b09",
+          "#272723",
+          "#454540",
+          "#676760",
+          "#8a8a82",
+          "#aeaea8",
+          "#d1d1cb",
+          "#efefea"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Page Stock",
+        "canonical": "oklch(98.8% 0.003 106.4)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#262626",
+          "#454544",
+          "#666665",
+          "#898987",
+          "#aeaeac",
+          "#d1d1d0",
+          "#eeeeed"
+        ]
+      },
+      "sheet": {
+        "role": "neutral",
+        "displayName": "Sheet",
+        "canonical": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d1d1d1",
+          "#eeeeee"
+        ]
+      },
+      "ok": {
+        "role": "status",
+        "displayName": "Works Green",
+        "canonical": "oklch(52.9% 0.106 154.4)",
+        "tonalRamp": [
+          "#001103",
+          "#022f17",
+          "#1a5131",
+          "#33764d",
+          "#529b6d",
+          "#81bf95",
+          "#ace0bc",
+          "#cffcdc"
+        ]
+      },
+      "bad": {
+        "role": "status",
+        "displayName": "Rejected Red",
+        "canonical": "oklch(50.1% 0.178 28.7)",
+        "tonalRamp": [
+          "#250000",
+          "#4f0101",
+          "#7e1b14",
+          "#af352b",
+          "#de5649",
+          "#fd8777",
+          "#ffb8ab",
+          "#ffe1d9"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Masthead",
+        "purpose": "The stacked GREEN/ROOM wordmark in the rail only; uppercase."
+      },
+      "headline": {
+        "displayName": "Page Title",
+        "purpose": "One condensed uppercase title per page."
+      },
+      "headline-billing": {
+        "displayName": "Billing Name",
+        "purpose": "Persona name heading the billing card; uppercase."
+      },
+      "title": {
+        "displayName": "Section Title",
+        "purpose": "Section titles, key provider names, the Cast heading; uppercase."
+      },
+      "title-act": {
+        "displayName": "Act Title",
+        "purpose": "Act titles in the programme list; uppercase."
+      },
+      "body-large": {
+        "displayName": "Billing Line",
+        "purpose": "The live persona sentence; max 60ch."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Ledes and running text; tabular numerals globally."
+      },
+      "ui": {
+        "displayName": "UI",
+        "purpose": "Buttons, tabs, rail items, segmented options."
+      },
+      "input": {
+        "displayName": "Input",
+        "purpose": "Typed values in inputs and selects; cast list names."
+      },
+      "small": {
+        "displayName": "Small",
+        "purpose": "Links, readiness lines, cost and unit text; hints at 400."
+      },
+      "label": {
+        "displayName": "Field Label",
+        "purpose": "Uppercase tracked form labels and legends."
+      },
+      "stamp": {
+        "displayName": "Stamp",
+        "purpose": "Stamp text only; uppercase at wdth 75."
+      }
+    },
+    "shadows": [
+      {
+        "name": "focus-halo",
+        "value": "0 0 0 4px var(--masthead)",
+        "purpose": "Yellow halo around a focused input or select, paired with the 2px ink outline. The only outward shadow in the system."
+      },
+      {
+        "name": "focus-inset",
+        "value": "inset 0 0 0 3px var(--masthead)",
+        "purpose": "Inner yellow ring on a keyboard-focused segmented option, inside an inset ink outline."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Expo-out easing for tab underline, time-bar width, and billing-line settle."
+      },
+      {
+        "name": "tab-underline",
+        "value": "transform 320ms var(--ease-out)",
+        "purpose": "Active tab underline draws in from the left."
+      },
+      {
+        "name": "time-bar",
+        "value": "width 320ms var(--ease-out)",
+        "purpose": "Running-time fill tracks the typed limit."
+      },
+      {
+        "name": "billing-set",
+        "value": "380ms var(--ease-out), from opacity 0.35 + blur(2px)",
+        "purpose": "Billing sentence settles into focus each time persona controls rewrite it."
+      },
+      {
+        "name": "control-wash",
+        "value": "background 120ms ease-out",
+        "purpose": "Button and segmented hover wash."
+      },
+      {
+        "name": "level-meter",
+        "value": "inline-size 60ms linear",
+        "purpose": "Live mic level meter fill."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation: none; transition: none",
+        "purpose": "prefers-reduced-motion disables every animation and transition."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "container-compact",
+        "value": "900px"
+      },
+      {
+        "name": "container-narrow",
+        "value": "640px"
+      },
+      {
+        "name": "min-window",
+        "value": "800x600"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Solid ink; the one committing action in a row (Save, Add keys).",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Save</button>",
+      "css": ".ds-btn{padding:8px 16px;border:var(--rule-w,1.5px) solid var(--ink,#141414);background:var(--sheet,#fff);color:var(--ink,#141414);font:600 0.9375rem/1.45 \"Archivo Variable\",system-ui,sans-serif;white-space:nowrap;cursor:pointer;transition:background 120ms ease-out;}.ds-btn:focus-visible{outline:2px solid var(--ink,#141414);outline-offset:2px;}.ds-btn:disabled{background:var(--sheet,#fff);color:#9a9a93;border-color:var(--rule,#dcdcd4);cursor:default;}.ds-btn-primary{background:var(--ink,#141414);color:var(--sheet,#fff);}.ds-btn-primary:hover:not(:disabled){background:#2c2c2a;}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Ink-outlined white button for non-committing actions (Test, Duplicate).",
+      "html": "<button class=\"ds-btn ds-btn-secondary\">Duplicate</button>",
+      "css": ".ds-btn{padding:8px 16px;border:var(--rule-w,1.5px) solid var(--ink,#141414);background:var(--sheet,#fff);color:var(--ink,#141414);font:600 0.9375rem/1.45 \"Archivo Variable\",system-ui,sans-serif;white-space:nowrap;cursor:pointer;transition:background 120ms ease-out;}.ds-btn:focus-visible{outline:2px solid var(--ink,#141414);outline-offset:2px;}.ds-btn:disabled{background:var(--sheet,#fff);color:#9a9a93;border-color:var(--rule,#dcdcd4);cursor:default;}.ds-btn-secondary:hover:not(:disabled){background:#f0f0ea;}"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Red outline and text; destructive actions only.",
+      "html": "<button class=\"ds-btn ds-btn-danger\">Delete</button>",
+      "css": ".ds-btn{padding:8px 16px;border:var(--rule-w,1.5px) solid var(--ink,#141414);background:var(--sheet,#fff);color:var(--ink,#141414);font:600 0.9375rem/1.45 \"Archivo Variable\",system-ui,sans-serif;white-space:nowrap;cursor:pointer;transition:background 120ms ease-out;}.ds-btn:focus-visible{outline:2px solid var(--ink,#141414);outline-offset:2px;}.ds-btn:disabled{background:var(--sheet,#fff);color:#9a9a93;border-color:var(--rule,#dcdcd4);cursor:default;}.ds-btn-danger{color:var(--bad,#b3261e);border-color:var(--bad,#b3261e);}.ds-btn-danger:hover:not(:disabled){background:#f0f0ea;}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Uppercase tracked label, ink-outlined input, yellow focus halo, muted hint.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-field-label\" for=\"ds-preset\">Preset name</label><input class=\"ds-input\" id=\"ds-preset\" value=\"FAANG tough\"><span class=\"ds-hint\">Pick one or describe it</span></div>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:7px;font-family:\"Archivo Variable\",system-ui,sans-serif;}.ds-field-label{font-size:0.6875rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-soft,#3a3a36);}.ds-input{width:100%;padding:9px 12px;border:1.5px solid var(--ink,#141414);background:var(--sheet,#fff);color:var(--ink,#141414);font:400 0.9375rem/1.45 \"Archivo Variable\",system-ui,sans-serif;}.ds-input:focus-visible{outline:2px solid var(--ink,#141414);outline-offset:1px;box-shadow:0 0 0 4px var(--masthead,#f2c230);}.ds-hint{font-size:0.8125rem;color:var(--muted,#5e5e58);}"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "chip",
+      "refersTo": "segmented",
+      "description": "Ink-ruled option strip; the active option is solid ink.",
+      "html": "<div class=\"ds-seg\" role=\"radiogroup\"><label class=\"ds-seg-opt\"><input type=\"radio\" name=\"ds-tone\">Friendly</label><label class=\"ds-seg-opt\"><input type=\"radio\" name=\"ds-tone\">Neutral</label><label class=\"ds-seg-opt is-active\"><input type=\"radio\" name=\"ds-tone\" checked>Tough</label></div>",
+      "css": ".ds-seg{display:inline-flex;border:1.5px solid var(--ink,#141414);overflow:hidden;background:var(--sheet,#fff);font-family:\"Archivo Variable\",system-ui,sans-serif;}.ds-seg-opt{padding:7px 15px;font-size:0.9375rem;font-weight:600;color:var(--ink,#141414);cursor:pointer;transition:background 120ms ease-out;}.ds-seg-opt+.ds-seg-opt{border-left:1.5px solid var(--ink,#141414);}.ds-seg-opt:hover:not(.is-active){background:#f0f0ea;}.ds-seg-opt.is-active{background:var(--ink,#141414);color:var(--sheet,#fff);}.ds-seg-opt:focus-within{outline:2px solid var(--ink,#141414);outline-offset:-5px;box-shadow:inset 0 0 0 3px var(--masthead,#f2c230);}.ds-seg-opt input{position:absolute;opacity:0;pointer-events:none;}"
+    },
+    {
+      "name": "Masthead Rail",
+      "kind": "nav",
+      "refersTo": "rail",
+      "description": "Full-height yellow rail: stacked condensed wordmark, nav items, key readiness at the foot.",
+      "html": "<nav class=\"ds-rail\"><div class=\"ds-masthead\"><span class=\"ds-masthead-name\">Green<br>room</span><span class=\"ds-masthead-sub\">Rehearsal programme</span></div><button class=\"ds-rail-item\">Home</button><button class=\"ds-rail-item\" aria-current=\"page\">Settings</button><div class=\"ds-rail-foot\"><span class=\"ds-ready\"><span class=\"ds-pip\"></span>OpenAI<span class=\"ds-ready-state\">Ready</span></span><span class=\"ds-ready is-bad\"><span class=\"ds-pip\"></span>Anthropic<span class=\"ds-ready-state\">Rejected</span></span></div></nav>",
+      "css": ".ds-rail{display:flex;flex-direction:column;gap:2px;width:232px;min-height:420px;padding:28px 18px 18px;background:var(--masthead,#f2c230);color:var(--ink,#141414);font-family:\"Archivo Variable\",system-ui,sans-serif;}.ds-masthead{display:flex;flex-direction:column;gap:10px;padding:0 6px 16px;margin-bottom:14px;border-bottom:3px solid var(--ink,#141414);}.ds-masthead-name{font-size:3rem;font-weight:900;font-stretch:62%;line-height:0.86;letter-spacing:-0.01em;text-transform:uppercase;}.ds-masthead-sub{font-size:0.6875rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;}.ds-rail-item{text-align:left;font:600 0.9375rem/1.45 \"Archivo Variable\",system-ui,sans-serif;color:inherit;padding:9px 10px;border:none;background:none;cursor:pointer;}.ds-rail-item:hover{background:var(--masthead-deep,#d9a80f);}.ds-rail-item[aria-current=\"page\"]{background:var(--ink,#141414);color:var(--masthead,#f2c230);}.ds-rail-item:focus-visible{outline:2px solid var(--ink,#141414);outline-offset:2px;}.ds-rail-foot{margin-top:auto;display:flex;flex-direction:column;gap:6px;padding:12px 6px 4px;border-top:1.5px solid var(--ink,#141414);font-size:0.8125rem;font-weight:600;}.ds-ready{display:flex;align-items:center;gap:8px;}.ds-ready-state{margin-left:auto;font-weight:500;color:var(--on-masthead-muted,#4d3d06);}.ds-pip{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--ink,#141414);background:var(--ink,#141414);}.ds-ready.is-bad .ds-pip{background:var(--bad,#b3261e);border-color:var(--bad,#b3261e);}.ds-ready.is-bad .ds-ready-state{color:var(--ink,#141414);font-weight:700;}"
+    },
+    {
+      "name": "Ink-Ruled Tabs",
+      "kind": "nav",
+      "refersTo": "tab",
+      "description": "Muted tabs over an ink rule; the active underline draws in from the left.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Keys</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"true\">Interviewer</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Models &amp; cost</button></div>",
+      "css": ".ds-tabs{display:flex;gap:28px;border-bottom:1.5px solid var(--ink,#141414);font-family:\"Archivo Variable\",system-ui,sans-serif;}.ds-tab{position:relative;padding:0 0 12px;border:none;background:none;font-size:0.9375rem;font-weight:600;color:var(--muted,#5e5e58);cursor:pointer;}.ds-tab:hover{color:var(--ink,#141414);}.ds-tab:focus-visible{outline:2px solid var(--ink,#141414);outline-offset:2px;}.ds-tab::after{content:\"\";position:absolute;left:0;right:0;bottom:-2px;height:4px;background:var(--ink,#141414);transform:scaleX(0);transform-origin:left;transition:transform 320ms cubic-bezier(0.16,1,0.3,1);}.ds-tab[aria-selected=\"true\"]{color:var(--ink,#141414);}.ds-tab[aria-selected=\"true\"]::after{transform:scaleX(1);}"
+    },
+    {
+      "name": "Stamps",
+      "kind": "chip",
+      "refersTo": "stamp",
+      "description": "Condensed uppercase state marks; states stamp rather than vanish.",
+      "html": "<span class=\"ds-stamp\">Saved</span> <span class=\"ds-stamp ds-stamp-ok\">Works</span> <span class=\"ds-stamp ds-stamp-bad\">Failed</span> <span class=\"ds-stamp ds-stamp-pending\">In production</span>",
+      "css": ".ds-stamp{display:inline-block;padding:2px 8px;border:1.5px solid currentColor;font-family:\"Archivo Variable\",system-ui,sans-serif;font-size:0.6875rem;font-weight:800;font-stretch:75%;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink,#141414);white-space:nowrap;}.ds-stamp-ok{color:var(--ok,#2f7d4f);}.ds-stamp-bad{color:var(--bad,#b3261e);}.ds-stamp-pending{color:var(--muted,#5e5e58);border-style:dashed;}"
+    },
+    {
+      "name": "Cast List",
+      "kind": "custom",
+      "refersTo": "cast-item",
+      "description": "Presets as a programme cast list with dot leaders to the voice; selected is solid ink with yellow text.",
+      "html": "<ul class=\"ds-cast\"><li><button class=\"ds-cast-item\" aria-pressed=\"false\"><span>Neutral</span><span class=\"ds-leader\"></span><span class=\"ds-cast-voice\">Marin</span></button></li><li><button class=\"ds-cast-item\" aria-pressed=\"true\"><span>FAANG tough</span><span class=\"ds-leader\"></span><span class=\"ds-cast-voice\">Cedar</span></button></li></ul>",
+      "css": ".ds-cast{list-style:none;margin:0;padding:0;width:220px;border-top:1.5px solid var(--ink,#141414);font-family:\"Archivo Variable\",system-ui,sans-serif;}.ds-cast li{border-bottom:1px solid var(--rule,#dcdcd4);}.ds-cast-item{display:flex;align-items:baseline;gap:8px;width:100%;padding:11px 8px;border:none;background:none;text-align:left;font:400 0.9375rem/1.45 \"Archivo Variable\",system-ui,sans-serif;color:var(--ink,#141414);cursor:pointer;}.ds-cast-item:hover:not([aria-pressed=\"true\"]){background:#f3f3ee;}.ds-cast-item:focus-visible{outline:2px solid var(--ink,#141414);outline-offset:2px;}.ds-cast-item[aria-pressed=\"true\"]{background:var(--ink,#141414);color:var(--masthead,#f2c230);font-weight:700;}.ds-leader{flex:1;min-width:16px;align-self:baseline;border-bottom:2px dotted #a3a39b;transform:translateY(-0.3em);}.ds-cast-item[aria-pressed=\"true\"] .ds-leader{border-color:var(--masthead,#f2c230);}.ds-cast-voice{font-size:0.8125rem;font-weight:600;}"
+    },
+    {
+      "name": "Billing Card",
+      "kind": "card",
+      "refersTo": "billing-card",
+      "description": "Square ink-framed card: condensed persona name, dot leader, voice, then the live billing sentence.",
+      "html": "<figure class=\"ds-billing\"><figcaption class=\"ds-billing-head\"><span class=\"ds-billing-role\">FAANG tough</span><span class=\"ds-leader\"></span><span class=\"ds-billing-voice\">voiced by Cedar</span></figcaption><p class=\"ds-billing-line\">A tough interviewer at a FAANG-style company, hiring for senior roles. Interrupts often and digs three follow-ups deep.</p></figure>",
+      "css": ".ds-billing{margin:0;padding:22px 26px 24px;border:1.5px solid var(--ink,#141414);background:var(--sheet,#fff);color:var(--ink,#141414);font-family:\"Archivo Variable\",system-ui,sans-serif;}.ds-billing-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;}.ds-billing-role{font-size:2rem;font-weight:850;font-stretch:62%;line-height:1;text-transform:uppercase;}.ds-leader{flex:1;min-width:16px;align-self:baseline;border-bottom:2px dotted #a3a39b;transform:translateY(-0.3em);}.ds-billing-voice{font-size:0.9375rem;font-weight:600;}.ds-billing-line{margin:12px 0 0;font-size:1.125rem;line-height:1.5;max-width:60ch;text-wrap:pretty;animation:ds-billing-set 380ms cubic-bezier(0.16,1,0.3,1);}@keyframes ds-billing-set{from{opacity:0.35;filter:blur(2px);}}@media (prefers-reduced-motion:reduce){.ds-billing-line{animation:none;}}"
+    },
+    {
+      "name": "Running-Time Bar",
+      "kind": "custom",
+      "refersTo": "time-bar",
+      "description": "Session limit drawn at exact length on a fixed 180-minute scale, ticked every 15 minutes.",
+      "html": "<div class=\"ds-limit\"><span class=\"ds-limit-label\">Mock interview</span><div class=\"ds-limit-bar\"><span style=\"width:16.67%\"></span></div><span class=\"ds-limit-cost\">about $2.40 max</span></div>",
+      "css": ".ds-limit{display:grid;grid-template-columns:140px 1fr;gap:4px 16px;align-items:center;font-family:\"Archivo Variable\",system-ui,sans-serif;color:var(--ink,#141414);}.ds-limit-label{font-weight:700;}.ds-limit-bar{position:relative;height:14px;border:1.5px solid var(--ink,#141414);background:var(--sheet,#fff);}.ds-limit-bar::after{content:\"\";position:absolute;inset:0;background:repeating-linear-gradient(to right,transparent 0 calc(100% / 12 - 1px),rgb(20 20 20 / 0.28) calc(100% / 12 - 1px) calc(100% / 12));pointer-events:none;}.ds-limit-bar span{display:block;height:100%;background:var(--masthead,#f2c230);border-right:1.5px solid var(--ink,#141414);transition:width 320ms cubic-bezier(0.16,1,0.3,1);}.ds-limit-cost{grid-column:2;font-size:0.8125rem;color:var(--ink-soft,#3a3a36);}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Tonight's Programme",
+    "overview": "Every practice session is a performance, and Greenroom is the printed programme you hold before the curtain. The system borrows from theatre programmes: a full-height masthead-yellow rail carrying a stacked, condensed GREEN/ROOM wordmark; ink-black type on cool white page stock; ink rules that divide content into acts, cast lists, and billings; dot leaders that run from a name to its role. The app deliberately avoids the category default, a grey dark dashboard with one neon accent.\n\nDensity is calm and scannable. A single user operates it between other tasks and minutes before a real interview, so every page answers three questions at a glance (are the keys ready, who is the interviewer tonight, what may a session cost) and every change is one click and visibly saved. Colour carries meaning only twice: yellow means the programme itself (rail, selection, filled running time), and green/red appear only where a state is good or bad.\n\nThe world is flat paper. Depth comes from ink: 1.5px outlines, solid-ink selected states, and heavier 3px rules where the masthead closes. Motion is short and printerly: an underline that draws in, a billing line that settles into focus as it is rewritten.",
+    "keyCharacteristics": [
+      "Masthead-yellow rail (232px) owns the full window height; content sits on cool white paper.",
+      "Archivo Variable on its width axis: condensed (wdth 62) heavy uppercase for wordmark and titles, normal width for every UI string.",
+      "1.5px ink outlines on every control; selection is solid ink, never a tint.",
+      "Programme devices are functional: dot leaders, acts, cast lists, billing card, stamps, running-time bars.",
+      "States stamp rather than vanish."
+    ],
+    "rules": [
+      {
+        "name": "The Two Inks Rule",
+        "body": "Yellow and ink do all the work. Yellow marks the programme (rail, fills, selection, focus); ink marks structure and choice. No third accent hue exists.",
+        "section": "colors"
+      },
+      {
+        "name": "The Earned Colour Rule",
+        "body": "Green and red appear only where a state is genuinely good or bad. Never use them for decoration, category, or emphasis.",
+        "section": "colors"
+      },
+      {
+        "name": "The White Stock Rule",
+        "body": "Backgrounds are cool white (`paper`, `sheet`). Never cream, beige, or grey-dark.",
+        "section": "colors"
+      },
+      {
+        "name": "The Width Axis Rule",
+        "body": "Condensed width (wdth 62) is reserved for uppercase heavy titles at 1.125rem and above. Anything a user reads as a sentence or clicks as a control is normal width.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "Archivo is the only typeface. Hierarchy comes from width, weight, and case, not from a second family.",
+        "section": "typography"
+      },
+      {
+        "name": "The Printed Depth Rule",
+        "body": "Lift is an ink frame, never a shadow. If an element needs to stand forward, give it `sheet` white and a 1.5px ink border.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** give the rail, and only the rail, a full masthead-yellow field.",
+      "**Do** outline every control in 1.5px ink and show selection as solid ink (white or yellow text).",
+      "**Do** set page, section, and act titles in condensed (wdth 62) heavy uppercase, and all other text at normal width.",
+      "**Do** connect a name to its value with a dot leader where the content is a listing.",
+      "**Do** mark state changes with a stamp (Saved, Works, Failed, In production) rather than removing the old state.",
+      "**Do** draw session limits as exact-length bars on a fixed scale, with the cost written beside them.",
+      "**Do** honour `prefers-reduced-motion`: every animation and transition is switched off."
+    ],
+    "donts": [
+      "**Don't** build a grey dark dashboard with a single neon accent; that is the category default this world refuses.",
+      "**Don't** use cream, beige, or warm off-white backgrounds; page stock is cool white.",
+      "**Don't** use drop shadows for depth; frame with ink instead.",
+      "**Don't** use green or red outside a real good or bad state.",
+      "**Don't** introduce a second typeface or set controls in the condensed width.",
+      "**Don't** round controls beyond 4px; framed cards (billing, notice) stay square."
+    ]
+  }
+}

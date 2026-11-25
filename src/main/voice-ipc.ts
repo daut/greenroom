@@ -1,0 +1,104 @@
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { IPC, type MonthSpend, type VoiceCall, type VoiceCallRequest } from "@shared/api";
+import { interviewerInstructions } from "@shared/interviewer";
+import { buildRealtimeSession } from "@shared/realtime";
+import { activePersona } from "@shared/settings";
+import { ipcMain, shell, systemPreferences } from "electron";
+import type { KeyStore } from "./key-store";
+import { createRealtimeCall } from "./realtime-call";
+import type { SettingsStore } from "./settings-store";
+import type { SpendLedger } from "./spend-ledger";
+
+interface Deps {
+  settingsStore: SettingsStore;
+  keyStore: KeyStore;
+  ledger: SpendLedger;
+  recordingsDir: string;
+}
+
+export function registerVoiceIpc({ settingsStore, keyStore, ledger, recordingsDir }: Deps) {
+  const monthSpend = (): MonthSpend => ({
+    spentUsd: ledger.monthTotal(),
+    budgetUsd: settingsStore.load().limits.monthlyBudgetUsd,
+  });
+
+  ipcMain.handle(IPC.voiceConnect, async (_e, request: VoiceCallRequest): Promise<VoiceCall> => {
+    assertWithinBudget(monthSpend());
+    const apiKey = keyStore.get("openai");
+    if (!apiKey) throw new Error("No OpenAI key set. Add one in Settings → Keys.");
+    await ensureMicrophoneAccess();
+
+    const settings = settingsStore.load();
+    const model = settings.models[request.kind];
+    const preset = activePersona(settings);
+    const persona = request.voice ? { ...preset, voice: request.voice } : preset;
+    const maxMinutes =
+      request.kind === "mock" ? settings.limits.mockMaxMinutes : settings.limits.drillMaxMinutes;
+    const task = `${request.task}\nTime limit: ${maxMinutes} minutes in total. Wrap up before it runs out.`;
+    const session = buildRealtimeSession({
+      model,
+      persona,
+      instructions: interviewerInstructions(persona, task, request.frame),
+      listenFirst: request.listenFirst === true,
+    });
+    const sdp = await createRealtimeCall({
+      sdp: request.sdp,
+      session,
+      apiKey,
+    });
+    return { sdp, model, maxMinutes };
+  });
+
+  ipcMain.handle(IPC.voiceRecordSpend, (_e, usd: unknown) => {
+    if (typeof usd === "number") ledger.record(usd);
+    return monthSpend();
+  });
+
+  ipcMain.handle(IPC.voiceMonthSpend, () => monthSpend());
+
+  ipcMain.handle(IPC.voiceSaveRecording, (_e, audio: ArrayBuffer) =>
+    saveSessionFile(recordingsDir, "webm", Buffer.from(audio)),
+  );
+
+  ipcMain.handle(IPC.voiceSaveEventLog, (_e, jsonl: unknown) =>
+    saveSessionFile(join(recordingsDir, "logs"), "jsonl", String(jsonl)),
+  );
+
+  ipcMain.handle(IPC.voiceReadRecording, (_e, path: unknown) => {
+    if (typeof path !== "string" || !path.startsWith(recordingsDir) || !existsSync(path))
+      return null;
+    const data = readFileSync(path);
+    return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+  });
+
+  ipcMain.handle(IPC.voiceRevealRecording, (_e, path: unknown) => {
+    if (typeof path === "string" && path.startsWith(recordingsDir)) shell.showItemInFolder(path);
+  });
+}
+
+function saveSessionFile(dir: string, extension: string, content: Buffer | string): string {
+  mkdirSync(dir, { recursive: true });
+  const path = join(dir, `${new Date().toISOString().replace(/[:.]/g, "-")}.${extension}`);
+  writeFileSync(path, content);
+  return path;
+}
+
+function assertWithinBudget({ spentUsd, budgetUsd }: MonthSpend) {
+  if (budgetUsd > 0 && spentUsd >= budgetUsd) {
+    throw new Error(
+      `Monthly voice budget reached ($${spentUsd.toFixed(2)} of $${budgetUsd}). Raise it in Settings → Models & cost.`,
+    );
+  }
+}
+
+async function ensureMicrophoneAccess() {
+  if (process.platform !== "darwin") return;
+  if (systemPreferences.getMediaAccessStatus("microphone") === "granted") return;
+  const granted = await systemPreferences.askForMediaAccess("microphone");
+  if (!granted) {
+    throw new Error(
+      "Microphone access is off. Allow Greenroom in System Settings → Privacy & Security → Microphone.",
+    );
+  }
+}
