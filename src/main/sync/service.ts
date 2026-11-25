@@ -89,6 +89,10 @@ export function createSyncService(deps: Deps) {
       await requireClient().verifyCode(email.trim(), code.trim());
       return run();
     },
+    async signInWithPassword(email: string, password: string) {
+      await requireClient().signInWithPassword(email.trim(), password);
+      return run();
+    },
     async signOut() {
       await supabase()?.signOut();
       lastSyncAt = null;

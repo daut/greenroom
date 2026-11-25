@@ -29,7 +29,7 @@ export function createSupabase(
       const { error } = await reachable(() =>
         client.auth.signInWithOtp({ email, options: { shouldCreateUser: true } }),
       );
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(friendly(error.message));
     },
     /** Accepts the emailed 6-digit code or the whole emailed link. */
     async verifyCode(email: string, pasted: string) {
@@ -46,7 +46,11 @@ export function createSupabase(
         }
         return client.auth.verifyOtp({ email, token: input.code, type: "email" });
       });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(friendly(error.message));
+    },
+    async signInWithPassword(email: string, password: string) {
+      const { error } = await reachable(() => client.auth.signInWithPassword({ email, password }));
+      if (error) throw new Error(friendly(error.message));
     },
     async signOut() {
       await client.auth.signOut();
@@ -61,6 +65,13 @@ export function createSupabase(
 }
 
 export type Supabase = ReturnType<typeof createSupabase>;
+
+const UNREACHABLE =
+  "Couldn't reach the Supabase project. Check the project URL and your connection.";
+
+function friendly(message: string): string {
+  return message.includes("fetch failed") ? UNREACHABLE : message;
+}
 
 async function reachable<T>(call: () => Promise<T>): Promise<T> {
   try {

@@ -10,6 +10,7 @@ export function SyncTab({ settings, update }: { settings: Settings; update: Upda
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [codeSent, setCodeSent] = useState(false);
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,6 +97,35 @@ export function SyncTab({ settings, update }: { settings: Settings; update: Upda
                 {codeSent ? "Send again" : "Email me a sign-in"}
               </button>
             </div>
+            <div className="key-controls">
+              <label className="visually-hidden" htmlFor="sync-password">
+                Password
+              </label>
+              <input
+                id="sync-password"
+                type="password"
+                placeholder="Password (create the user in Supabase → Authentication → Users)"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) =>
+                  e.key === "Enter" &&
+                  password &&
+                  act(() => window.greenroom.sync.signInWithPassword(email, password))
+                }
+              />
+              <button
+                type="button"
+                className="btn primary"
+                disabled={busy || !email.includes("@") || !password}
+                onClick={() => act(() => window.greenroom.sync.signInWithPassword(email, password))}
+              >
+                Sign in
+              </button>
+            </div>
+            <p className="hint">
+              Or sign in by email instead of a password. Supabase's built-in mailer sends at most 2
+              emails an hour per project.
+            </p>
             {codeSent && (
               <div className="key-controls">
                 <label className="visually-hidden" htmlFor="sync-code">

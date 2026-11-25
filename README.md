@@ -63,9 +63,13 @@ Sessions and recordings can sync to your own [Supabase](https://supabase.com) pr
 2. Apply the schema: `supabase link --project-ref <ref>` then `supabase db push`
    (or paste `supabase/migrations/*_greenroom_sync.sql` into the SQL editor). It creates the
    `training_sessions` table and a private `recordings` bucket, both owner-only via RLS.
-3. In Greenroom, **Settings → Sync & data**: paste the project URL and the **publishable** key
-   (`sb_publishable_…`, never the secret key), then request a sign-in email.
-4. Paste what the email gives you into Greenroom: either the 6-digit code or the whole link.
+3. **Authentication → Users → Add user → Create new user**: your email, a password, and
+   *Auto Confirm User* on. (Password sign-in avoids Supabase's built-in mailer, which sends at most
+   2 emails an hour per project.)
+4. In Greenroom, **Settings → Sync & data**: paste the project URL and the **publishable** key
+   (`sb_publishable_…`, never the secret key), then sign in with that email and password.
+
+Prefer email sign-in? Request a sign-in email and paste either the 6-digit code or the whole link.
    With Supabase's default templates you get a link; clicking it opens a broken `localhost` page,
    so copy the link (or the address of that page) and paste it instead. To get codes, add
    `{{ .Token }}` to both the **Confirm signup** (first sign-in) and **Magic link** templates under

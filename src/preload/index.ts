@@ -32,6 +32,7 @@ const api: GreenroomApi = {
     status: () => ipcRenderer.invoke(IPC.syncStatus),
     sendCode: (email) => ipcRenderer.invoke(IPC.syncSendCode, email),
     verifyCode: (email, code) => ipcRenderer.invoke(IPC.syncVerifyCode, email, code),
+    signInWithPassword: (email, password) => ipcRenderer.invoke(IPC.syncPassword, email, password),
     signOut: () => ipcRenderer.invoke(IPC.syncSignOut),
     now: () => ipcRenderer.invoke(IPC.syncNow),
   },

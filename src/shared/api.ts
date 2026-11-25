@@ -89,6 +89,7 @@ export interface GreenroomApi {
     status(): Promise<SyncStatus>;
     sendCode(email: string): Promise<void>;
     verifyCode(email: string, code: string): Promise<SyncStatus>;
+    signInWithPassword(email: string, password: string): Promise<SyncStatus>;
     signOut(): Promise<SyncStatus>;
     now(): Promise<SyncStatus>;
   };
@@ -136,6 +137,7 @@ export const IPC = {
   syncStatus: "sync:status",
   syncSendCode: "sync:send-code",
   syncVerifyCode: "sync:verify-code",
+  syncPassword: "sync:password",
   syncSignOut: "sync:sign-out",
   syncNow: "sync:now",
   dataExportAll: "data:export-all",

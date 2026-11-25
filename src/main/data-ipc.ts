@@ -11,6 +11,9 @@ export function registerDataIpc(store: SessionStore, sync: SyncService, recordin
   ipcMain.handle(IPC.syncVerifyCode, (_e, email: string, code: string) =>
     sync.verifyCode(String(email), String(code)),
   );
+  ipcMain.handle(IPC.syncPassword, (_e, email: string, password: string) =>
+    sync.signInWithPassword(String(email), String(password)),
+  );
   ipcMain.handle(IPC.syncSignOut, () => sync.signOut());
   ipcMain.handle(IPC.syncNow, () => sync.run());
 
