@@ -99,7 +99,11 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo · `[!]` blocked / needs i
 - [x] Sync engine: last-writer-wins per session, tombstones both ways, recordings up/down with path relinking, TDD with a fake remote
 - [x] Supabase adapter (publishable key, email OTP code sign-in, encrypted token storage), auto-sync on start / 5 min / 10 s after edits
 - [x] Settings → Sync & data: project, sign-in, status, sync now, sign out; export all to JSON; delete all
-- [!] Untested against a real project — needs your Supabase project (no Docker here for a local stack)
+- [x] Sign-in accepts the pasted email link as well as a code (default templates send links; first sign-in uses the Confirm signup template)
+- [x] Password sign-in (built-in mailer allows only 2 emails/hour/project)
+- [x] Migration applied to the user's `greenroom` project (ref `twzsrnczvevfvgqfkiox`, linked via CLI); RLS on, 4 table + 4 storage owner-only policies, bucket private, anon has no access; advisors: only leaked-password protection warning
+- [!] Confirm **Sync now** succeeds end to end (user signed in; first sync attempt failed only because the table was missing, now fixed)
+- [!] Turn on leaked-password protection (Supabase dashboard → Authentication → Password security)
 
 ### M6 — Progress
 
@@ -113,7 +117,23 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo · `[!]` blocked / needs i
 
 ## What's left
 
-- [!] Your live tests: voice drill/mock/presentation with an OpenAI key; Supabase sync with a project
+Handover notes for the next agent: see README "Development" and "Adding a training". Data folder is shared between `npm run dev` and installed builds (`~/Library/Application Support/Greenroom`). Claude Code text provider is on in dev, off in packaged builds unless `GREENROOM_ENABLE_CLAUDE_CODE=1`.
+
+### Next feature: import a document from a link (decided, not built)
+- [ ] "Import from link" next to "Import PDF, TXT or Markdown" on every `document` form field (JD, CV, presentation outline)
+- [ ] Main-process `files.importUrl(url)`: https only; load in a hidden sandboxed `BrowserWindow` (no preload, separate partition), wait for load, 20 s timeout, close
+- [ ] Extraction as a pure tested function: prefer `JobPosting` JSON-LD (title, hiringOrganization, description HTML → text); fallback to main/article text with nav/header/footer stripped; empty or login wall → "Couldn't read a job description from that page. Paste the text instead." (LinkedIn will usually hit this)
+- [ ] Show "Imported from <host>" under the field, like file imports
+
+### Release
+- [ ] Cut v0.1.1 (main has sign-in fixes not in v0.1.0): bump `package.json` version, tag `v0.1.1`, wait for Release workflow, copy rendered cask artifact to `daut/homebrew-tap/Casks/greenroom.rb`, `brew audit --cask --strict`
+
+### Waiting on the user
+- [!] Retest Sound check after the double-reply fix (send newest `recordings/logs/*.jsonl` if it misbehaves)
+- [!] Live voice drill / mock / presentation with an OpenAI key
+- [!] Confirm Supabase **Sync now** works; enable leaked-password protection
+
+### Todo
 - [ ] Automate the tap update in the release workflow (needs a token secret with write access to the tap)
 - [ ] Apple Developer ID signing + notarization (removes the quarantine step; enables auto-update on macOS)
 - [ ] macOS packaged-app mic prompt check (TCC) once a key is in
@@ -121,6 +141,8 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo · `[!]` blocked / needs i
 - [x] Min-window Drill: cost + Start moved above the question list under 640px
 
 ## Log
+
+- 2026-11-25: Supabase sign-in fixed (pasted link, password), migration applied to the real project. Link import planned, not built. v0.1.1 pending.
 
 - 2026-11-25: Public repos created, v0.1.0 released, cask published. Claude Code text provider off in release builds unless GREENROOM_ENABLE_CLAUDE_CODE=1.
 
