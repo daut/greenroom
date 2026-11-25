@@ -10,12 +10,12 @@ cask "greenroom" do
   desc "Personal interview and presentation trainer with realtime voice mock sessions"
   homepage "https://github.com/daut/greenroom"
 
-  depends_on macos: :monterey
+  depends_on macos: :ventura
 
   app "Greenroom.app"
 
   caveats <<~EOS
-    Greenroom isn't signed with an Apple Developer ID yet. Before the first launch, run:
+    Greenroom isn't notarized by Apple. Before the first launch, run:
       xattr -dr com.apple.quarantine "#{appdir}/Greenroom.app"
   EOS
 
