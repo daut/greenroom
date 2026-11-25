@@ -59,7 +59,9 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo · `[!]` blocked / needs i
 - [x] Renderer: WebRTC session (mic track, remote audio, `oai-events` data channel), interviewer speaks first
 - [x] Live transcript reducer (you / interviewer, timings, who is speaking), TDD
 - [x] Cost from `response.done` usage + transcription duration, per-model rates, TDD
-- [x] `maxMinutes` hard stop; monthly spend ledger; new sessions blocked at 100% budget
+- [x] Monthly spend ledger; new sessions blocked at 100% budget
+- [x] Gentle time limit (`src/shared/wrap-up.ts`, TDD): silent system note 1–3 min before the limit, "time is up, close after this answer" note at the limit, goodbye prompted only after 4 s of quiet (never while listen-first), hang-up only after 2–5 min overtime and not mid-sentence (absolute +1 min). Replaces the hard cut at `maxMinutes`
+- [!] Gentle time limit untested live (set Drill to 1–2 min in Settings to try it quickly)
 - [x] Recording: mic + interviewer mixed via Web Audio → MediaRecorder (Opus/WebM) → `userData/recordings/`
 - [x] Sound check screen (nav) in the programme style: running-time bar, cost so far, transcript, recording link
 - [x] Verified end-to-end up to OpenAI auth: no key → clear error; fake key → "OpenAI rejected the API key (401)"
@@ -140,6 +142,8 @@ Handover notes for the next agent: see README "Development" and "Adding a traini
 - [x] Min-window Drill: cost + Start moved above the question list under 640px
 
 ## Log
+
+- 2026-11-25: Time limit no longer cuts you off: the interviewer is warned, then closes after your answer; hard stop only after overtime.
 
 - 2026-11-25: Link import built and verified live. Sound check log reviewed (no double replies; end_session missed → prompt fix). Supabase sync verified server-side. Tap update automated with a deploy key. Apple signing dropped (won't do). v0.1.1 released via the automated tap push.
 

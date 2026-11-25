@@ -34,7 +34,10 @@ export function ModelsTab({ settings, update }: { settings: Settings; update: Up
     <div className="stack wide">
       <section className="stack">
         <h2 className="section-title">Running time</h2>
-        <p className="lede">Voice sessions end on their own at these limits.</p>
+        <p className="lede">
+          Planned length of a voice session. Near the end the interviewer is told to wrap up, and it
+          closes after your current answer; nothing is cut off mid-sentence.
+        </p>
         <div className="limits">
           <SessionLimit
             label="Drill"

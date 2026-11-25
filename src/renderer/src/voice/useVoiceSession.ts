@@ -1,6 +1,7 @@
 import type { VoiceSessionKind } from "@shared/api";
 import type { Settings } from "@shared/settings";
 import { emptyTranscript, reduceEvent, type TranscriptState } from "@shared/transcript";
+import { nextWrapUpStep, type WrapUpDone, type WrapUpStep, wrapUpNote } from "@shared/wrap-up";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { errorMessage } from "../text";
 import { startRecorder } from "./recorder";
@@ -206,16 +207,57 @@ async function openSession({
   const recordingOffsetMs = performance.now() - startedAt;
   onState(() => ({ recordingOffsetMs }));
   const limitMs = call.maxMinutes * 60_000;
+  const wrapUp: WrapUpDone = { warned: false, timeUp: false, prompted: false };
+  let listening = listenFirst === true;
+  let quietSince = performance.now();
   const ticker = setInterval(() => {
-    const elapsedMs = performance.now() - startedAt;
+    const now = performance.now();
+    const elapsedMs = now - startedAt;
     onState(() => ({ elapsedMs }));
-    if (elapsedMs >= limitMs) onFinish("time");
+    if (transcript.endRequested) return;
+    if (isBusy(transcript)) quietSince = now;
+    const step = nextWrapUpStep({
+      elapsedMs,
+      limitMs,
+      youSpeaking: transcript.speaking === "you",
+      quietMs: now - quietSince,
+      canPrompt: !listening,
+      done: wrapUp,
+    });
+    applyWrapUp(step);
   }, 250);
+
+  function applyWrapUp(step: WrapUpStep) {
+    switch (step) {
+      case "warn":
+      case "time-up":
+        wrapUp.warned = true;
+        wrapUp.timeUp = step === "time-up";
+        sendNote(wrapUpNote(step, limitMs));
+        return;
+      case "prompt-goodbye":
+        wrapUp.prompted = true;
+        send({ type: "response.create" });
+        return;
+      case "hang-up":
+        onFinish("time");
+        return;
+    }
+  }
+
+  /** A system message the interviewer reads on its next turn; it doesn't start one. */
+  function sendNote(text: string) {
+    send({
+      type: "conversation.item.create",
+      item: { type: "message", role: "system", content: [{ type: "input_text", text }] },
+    });
+  }
 
   let closed: Promise<string | null> | null = null;
   return {
     maxMinutes: call.maxMinutes,
     handOff(message: string) {
+      listening = false;
       send({
         type: "session.update",
         session: {
@@ -266,6 +308,10 @@ function redactAudio(event: unknown): unknown {
     ...(audio ? { audio: "…" } : {}),
     ...(delta ? { delta: isAudio ? "…" : delta } : {}),
   };
+}
+
+function isBusy(t: TranscriptState): boolean {
+  return t.speaking !== null || t.responding || t.interviewerAudio;
 }
 
 function stopTracks(stream: MediaStream) {

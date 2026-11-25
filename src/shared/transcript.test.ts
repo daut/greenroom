@@ -160,6 +160,16 @@ describe("reduceEvent", () => {
     expect(run([[1, { type: "response.created", response: {} }]]).responded).toBe(true);
   });
 
+  it("knows whether a response is being generated", () => {
+    expect(run([[1, { type: "response.created", response: {} }]]).responding).toBe(true);
+    expect(
+      run([
+        [1, { type: "response.created", response: {} }],
+        [2, { type: "response.done", response: {} }],
+      ]).responding,
+    ).toBe(false);
+  });
+
   it("ignores events it doesn't understand", () => {
     expect(
       run([

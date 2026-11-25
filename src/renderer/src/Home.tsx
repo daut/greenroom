@@ -174,7 +174,7 @@ function Billing({ settings, onOpenSettings }: { settings: Settings; onOpenSetti
         <span>Mock interview</span>
         <span className="leader" aria-hidden="true" />
         <span>
-          up to {minutes} min{cost === null ? "" : `, about ${formatUsd(cost)}`}
+          about {minutes} min{cost === null ? "" : `, about ${formatUsd(cost)}`}
         </span>
       </div>
     </div>

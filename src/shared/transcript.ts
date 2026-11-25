@@ -29,6 +29,8 @@ export interface TranscriptState {
   interviewerAudio: boolean;
   /** At least one response has started (used to avoid a second opening greeting). */
   responded: boolean;
+  /** A response is being generated right now. */
+  responding: boolean;
 }
 
 export function emptyTranscript(): TranscriptState {
@@ -40,6 +42,7 @@ export function emptyTranscript(): TranscriptState {
     endRequested: false,
     interviewerAudio: false,
     responded: false,
+    responding: false,
   };
 }
 
@@ -65,7 +68,7 @@ export function reduceEvent(
       return { ...upsert(state, event.item_id, "you", { text, final: true }), costUsd };
     }
     case "response.created":
-      return { ...state, responded: true };
+      return { ...state, responded: true, responding: true };
     case "response.output_audio_transcript.delta": {
       const current = find(state, event.item_id);
       return {
@@ -89,6 +92,7 @@ export function reduceEvent(
     case "response.done":
       return {
         ...state,
+        responding: false,
         costUsd: state.costUsd + costOfResponse(model, event.response?.usage),
         endRequested: state.endRequested || callsEndSession(event.response?.output),
       };

@@ -16,7 +16,7 @@ export function RunningTime({
 
   return (
     <div className="limit running">
-      <span className="limit-label">Running time</span>
+      <span className="limit-label">{elapsedMs < limitMs ? "Running time" : "Wrapping up"}</span>
       <div
         className="limit-bar"
         role="progressbar"

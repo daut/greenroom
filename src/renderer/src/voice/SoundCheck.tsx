@@ -21,7 +21,7 @@ const STAMP: Record<VoiceStatus, { label: string; tone: string } | null> = {
 
 const ENDED_BY = {
   interviewer: "The interviewer wrapped up the sound check.",
-  time: "The time limit ended the session.",
+  time: "The session ran well past its time, so it was closed.",
   you: "You ended the session.",
 } as const;
 

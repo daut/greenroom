@@ -35,7 +35,7 @@ export function registerVoiceIpc({ settingsStore, keyStore, ledger, recordingsDi
     const persona = request.voice ? { ...preset, voice: request.voice } : preset;
     const maxMinutes =
       request.kind === "mock" ? settings.limits.mockMaxMinutes : settings.limits.drillMaxMinutes;
-    const task = `${request.task}\nTime limit: ${maxMinutes} minutes in total. Wrap up before it runs out.`;
+    const task = `${request.task}\nPlanned length: about ${maxMinutes} minutes. You can't see a clock; the app will send you a note when time is nearly up and when it is up. Until then, keep going. Never cut the candidate off mid-answer.`;
     const session = buildRealtimeSession({
       model,
       persona,

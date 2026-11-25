@@ -19,7 +19,7 @@ import type { UpdateSession } from "./useTrainingSession";
 
 const ENDED_BY: Record<EndReason, string> = {
   interviewer: "interviewer wrapped up",
-  time: "time limit",
+  time: "ran past the time",
   you: "you ended it",
 };
 
@@ -232,7 +232,8 @@ function SessionBilling({ settings, kind }: { settings: Settings; kind: VoiceSes
         <span>Running time</span>
         <span className="leader" aria-hidden="true" />
         <span>
-          stops at {minutes} min{cost === null ? "" : `, about ${formatUsd(cost)} at most`}
+          about {minutes} min, then a natural close
+          {cost === null ? "" : `, about ${formatUsd(cost)}`}
         </span>
       </div>
     </div>
