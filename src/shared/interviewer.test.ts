@@ -27,6 +27,13 @@ describe("interviewerInstructions", () => {
     expect(interviewerInstructions(persona, "x")).toMatch(/do not coach/i);
   });
 
+  it("lets a coaching session correct the user", () => {
+    const text = interviewerInstructions(persona, "x", "You are a coach.", { coach: true });
+
+    expect(text).not.toMatch(/do not coach/i);
+    expect(text).toMatch(/you are coaching/i);
+  });
+
   it("tells the interviewer to end the session when the task is done", () => {
     expect(interviewerInstructions(persona, "x")).toContain("call end_session");
   });

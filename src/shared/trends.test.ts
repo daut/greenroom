@@ -16,7 +16,8 @@ const def: TrainingDefinition = {
       source: "mock",
       rubric: [{ id: "structure", label: "Structure", description: "" }],
       system: "",
-      prompt: () => "",
+      background: () => "",
+      guidance: "",
     },
   ],
 };

@@ -11,7 +11,10 @@ Trainings:
 - **English conversation:** topic-based conversations with corrections afterwards.
 
 Every report scores you against a rubric and measures pace, filler words, talk share and answer
-length. History charts your scores over time.
+length. Each finding quotes what you said, gives the better version and the rule, and links to that
+moment in the recording. Discuss the report with the coach by text or on a short call, then
+practise each finding with typed reps and spoken reps. Habits the reports keep finding carry over
+into your next session. History charts your scores and habits over time.
 
 ## Install
 
@@ -104,7 +107,8 @@ add it to `TRAININGS` in `src/shared/trainings/index.ts`. Phases:
 | `generate` | Structured text output (zod schema) from earlier artifacts, listed on screen |
 | `cards` | Study cards with drafts, written feedback and confidence |
 | `voice` | A realtime voice session; optional `choices`, `frame` (who the voice plays) and `listenFirst` (listen until handed over) |
-| `report` | Scores a voice phase's runs against a rubric and adds speech metrics |
+| `report` | Scores a voice phase's runs against a rubric: findings with rules and line links, focus, habit review, speech metrics, and a coach discussion. Give it `background` (session context) and `guidance` (what to look for) |
+| `drills` | Typed and spoken reps on the report findings and on habits still open from earlier sessions; coached by the first report's scorer |
 
 Phases unlock after the previous one (or the ones in `after`) and read each other's output through
 `ctx.artifact(id)`. The contract tests in `trainings.test.ts` check every registered training.

@@ -18,6 +18,11 @@ describe.each(TRAININGS.map((t) => [t.id, t] as const))("training %s", (_id, def
     }
   });
 
+  it("has a report to coach its drills", () => {
+    if (!def.phases.some((p) => p.kind === "drills")) return;
+    expect(def.phases.some((p) => p.kind === "report")).toBe(true);
+  });
+
   it("can reach every phase", () => {
     let session = newSession(def, "s");
     for (const p of def.phases) {

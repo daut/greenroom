@@ -18,6 +18,10 @@ export interface VoiceCallRequest {
   listenFirst?: boolean;
   /** Use this voice instead of the active preset's (voice preview). */
   voice?: string;
+  /** The voice may explain and correct (discussions, drills) instead of staying in character. */
+  coach?: boolean;
+  /** A shorter limit than the one in Settings, e.g. a three-minute drill. */
+  maxMinutes?: number;
 }
 
 export interface VoiceCall {

@@ -1087,6 +1087,165 @@ textarea {
   margin-top: 6px;
 }
 
+/* ---------- Findings: one fix per row, quote → better, then the rule ---------- */
+
+.findings {
+  list-style: none;
+  padding: 0;
+  border-top: var(--rule-w) solid var(--ink);
+}
+
+.focus .findings {
+  border-top-width: 3px;
+}
+
+.finding {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.finding-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+}
+
+.finding-habit {
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+
+.finding-fix {
+  max-width: 70ch;
+  font-size: var(--step-1);
+}
+
+.finding-said {
+  color: var(--ink-soft);
+  text-decoration: line-through;
+  text-decoration-color: var(--bad);
+  text-decoration-thickness: 1.5px;
+}
+
+.finding-why {
+  max-width: 70ch;
+  color: var(--ink-soft);
+}
+
+.finding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.habit-review {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.habit-review li {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.habit-review .stamp {
+  justify-self: start;
+}
+
+.habit-review .hint {
+  display: block;
+}
+
+/* ---------- Discussion ---------- */
+
+.discussion {
+  padding-top: 16px;
+  border-top: var(--rule-w) solid var(--ink);
+}
+
+.chat {
+  list-style: none;
+  padding: 0;
+}
+
+.chat li {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 16px;
+  align-items: baseline;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.chat-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 70ch;
+}
+
+.chat-you .chat-text {
+  font-weight: 600;
+}
+
+.chat-about {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+}
+
+.starters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chat-input {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.chat-input textarea {
+  resize: vertical;
+}
+
+/* ---------- Typed reps ---------- */
+
+.reps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding-left: 1.4em;
+  max-width: 70ch;
+}
+
+.reps label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 6px;
+}
+
+.rep-prompt {
+  font-size: var(--step-0);
+}
+
+.rep-feedback {
+  margin-top: 6px;
+}
+
 .metrics {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

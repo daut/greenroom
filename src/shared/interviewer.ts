@@ -17,10 +17,15 @@ const INTERRUPTIONS: Record<Persona["interruptions"], string> = {
 const INTERVIEW_FRAME =
   "You are the interviewer in a spoken job-interview rehearsal. The user is the candidate.";
 
+const NO_COACHING = "Do not coach, grade, or give feedback during the session. Stay in character.";
+const COACHING =
+  "You are coaching: explain, correct and encourage as the task says, briefly and kindly. Speak slowly enough for a learner.";
+
 export function interviewerInstructions(
   persona: Persona,
   task: string,
   frame: string = INTERVIEW_FRAME,
+  { coach = false } = {},
 ): string {
   return [
     frame,
@@ -28,9 +33,9 @@ export function interviewerInstructions(
     `Tone: ${TONE[persona.style]}`,
     `Turn-taking: ${INTERRUPTIONS[persona.interruptions]}`,
     `Speak only ${persona.language}. Keep each turn short, like a real interviewer: one question at a time.`,
-    "Do not coach, grade, or give feedback during the session. Stay in character.",
+    coach ? COACHING : NO_COACHING,
     `Task: ${task}`,
     "When the task is complete, say one short closing sentence, then call end_session in that same response. Never call it earlier.",
-    "Saying goodbye without calling end_session leaves the candidate stuck in the session, so always make the call after your closing sentence.",
+    "Saying goodbye without calling end_session leaves the user stuck in the session, so always make the call after your closing sentence.",
   ].join("\n");
 }

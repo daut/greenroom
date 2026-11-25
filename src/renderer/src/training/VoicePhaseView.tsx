@@ -1,7 +1,5 @@
-import type { VoiceSessionKind } from "@shared/api";
-import { estimateSessionCostUsd } from "@shared/billing";
 import type { ReportArtifact } from "@shared/report";
-import { activePersona, type Settings } from "@shared/settings";
+import type { Settings } from "@shared/settings";
 import {
   completePhase,
   contextOf,
@@ -12,7 +10,8 @@ import {
   type VoiceRun,
 } from "@shared/training";
 import { useEffect, useRef, useState } from "react";
-import { capitalize, dateTime, formatUsd } from "../text";
+import { dateTime, formatUsd } from "../text";
+import { SessionBilling } from "../voice/SessionBilling";
 import { clock, RunningTime, Transcript } from "../voice/SessionPanel";
 import { type EndReason, useVoiceSession } from "../voice/useVoiceSession";
 import type { UpdateSession } from "./useTrainingSession";
@@ -211,33 +210,6 @@ export function VoicePhaseView({
 
 function lastMs(run: VoiceRun): number {
   return Math.max(0, ...run.lines.map((l) => l.endMs ?? l.startMs));
-}
-
-/** Who you'll face and what the session can cost, before you start. */
-function SessionBilling({ settings, kind }: { settings: Settings; kind: VoiceSessionKind }) {
-  const persona = activePersona(settings);
-  const minutes =
-    kind === "mock" ? settings.limits.mockMaxMinutes : settings.limits.drillMaxMinutes;
-  const cost = estimateSessionCostUsd(settings.models[kind], minutes);
-  return (
-    <div className="stack tight">
-      <div className="cast-line">
-        <span>Opposite you</span>
-        <span className="leader" aria-hidden="true" />
-        <span>
-          {persona.name}, voiced by {capitalize(persona.voice)}
-        </span>
-      </div>
-      <div className="cast-line">
-        <span>Running time</span>
-        <span className="leader" aria-hidden="true" />
-        <span>
-          about {minutes} min, then a natural close
-          {cost === null ? "" : `, about ${formatUsd(cost)}`}
-        </span>
-      </div>
-    </div>
-  );
 }
 
 /** Green only at or above the hire bar (3); a lower score is plain ink, not "good". */

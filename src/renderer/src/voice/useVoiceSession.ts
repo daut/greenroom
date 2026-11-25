@@ -90,6 +90,10 @@ export function useVoiceSession(audio: Settings["audio"] | null) {
 export interface StartOptions {
   frame?: string;
   listenFirst?: boolean;
+  coach?: boolean;
+  maxMinutes?: number;
+  /** Defaults to the Settings → Audio choice; coaching calls aren't kept. */
+  record?: boolean;
 }
 
 interface LiveSession {
@@ -114,6 +118,9 @@ async function openSession({
   onFinish,
   frame,
   listenFirst,
+  coach,
+  maxMinutes,
+  record = audio.recordSessions,
 }: OpenOptions): Promise<LiveSession> {
   const mic = await navigator.mediaDevices.getUserMedia({
     audio: {
@@ -194,6 +201,8 @@ async function openSession({
       task,
       frame,
       listenFirst,
+      coach,
+      maxMinutes,
     });
   } catch (error) {
     stopTracks(mic);
@@ -203,7 +212,7 @@ async function openSession({
   model = call.model;
   await pc.setRemoteDescription({ type: "answer", sdp: call.sdp });
 
-  const recorder = audio.recordSessions ? startRecorder(mic, remote) : null;
+  const recorder = record ? startRecorder(mic, remote) : null;
   const recordingOffsetMs = performance.now() - startedAt;
   onState(() => ({ recordingOffsetMs }));
   const limitMs = call.maxMinutes * 60_000;

@@ -1,24 +1,32 @@
+import { coachBriefing, coachSystem } from "@shared/coach";
+import { knownHabits } from "@shared/habits";
 import {
   buildReport,
-  formatTranscript,
+  type ChatTurn,
+  type Finding,
+  habitKey,
   type Report,
   type ReportArtifact,
-  rubricText,
+  scoringPrompt,
   scoringSchema,
 } from "@shared/report";
 import {
   completePhase,
   contextOf,
   type ReportPhase,
+  saveArtifact,
   type TrainingDefinition,
   type TrainingSession,
   type VoiceArtifact,
   type VoiceRun,
 } from "@shared/training";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { dateTime, errorMessage } from "../text";
 import { askStructured } from "./ask";
-import { Replay } from "./Replay";
+import { Discussion } from "./Discussion";
+import { type FindingActions, FindingList } from "./Findings";
+import { type Cue, Replay } from "./Replay";
+import { useAllSessions } from "./useAllSessions";
 import type { UpdateSession } from "./useTrainingSession";
 
 export function ReportPhaseView({
@@ -26,19 +34,26 @@ export function ReportPhaseView({
   phase,
   session,
   update,
+  onDrill,
 }: {
   def: TrainingDefinition;
   phase: ReportPhase;
   session: TrainingSession;
   update: UpdateSession;
+  /** Opens the practice phase on this habit, if the training has one. */
+  onDrill: ((habit: string) => void) | null;
 }) {
   const runs = [
     ...((session.artifacts[phase.source] as VoiceArtifact | undefined) ?? []),
   ].reverse();
   const reports = (session.artifacts[phase.id] as ReportArtifact | undefined) ?? {};
+  const allSessions = useAllSessions();
   const [open, setOpen] = useState<string | null>(runs[0]?.at ?? null);
   const [scoring, setScoring] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const habitsBefore = (run: VoiceRun) =>
+    knownHabits(withCurrent(allSessions ?? [], session), def, { before: run.at });
 
   const score = async (run: VoiceRun) => {
     setScoring(run.at);
@@ -47,13 +62,17 @@ export function ReportPhaseView({
       const reply = await askStructured(
         "score",
         phase.system,
-        phase.prompt(contextOf(session), formatTranscript(run.lines), rubricText(phase.rubric)),
+        scoringPrompt(phase, contextOf(session), run, habitsBefore(run)),
         scoringSchema,
       );
       const report = buildReport(run, phase.rubric, reply);
       update((s) => {
         const current = (s.artifacts[phase.id] as ReportArtifact | undefined) ?? {};
-        return completePhase(def, s, phase.id, { ...current, [run.at]: report });
+        const discussion = current[run.at]?.discussion;
+        return completePhase(def, s, phase.id, {
+          ...current,
+          [run.at]: discussion ? { ...report, discussion } : report,
+        });
       });
       setOpen(run.at);
     } catch (e) {
@@ -94,7 +113,7 @@ export function ReportPhaseView({
                   <button
                     type="button"
                     className="btn primary"
-                    disabled={scoring !== null}
+                    disabled={scoring !== null || allSessions === null}
                     onClick={() => score(run)}
                   >
                     {scoring === run.at ? "Scoring" : "Score it"}
@@ -102,20 +121,38 @@ export function ReportPhaseView({
                 )}
               </div>
               {open === run.at && (
-                <div className="card-editor stack">
-                  {report && <ReportBody phase={phase} report={report} />}
-                  {report && (
-                    <button
-                      type="button"
-                      className="link"
-                      disabled={scoring !== null}
-                      onClick={() => score(run)}
-                    >
-                      {scoring === run.at ? "Scoring again…" : "Score again"}
-                    </button>
-                  )}
-                  <Replay run={run} />
-                </div>
+                <OpenRun
+                  phase={phase}
+                  run={run}
+                  report={report}
+                  scoring={allSessions === null ? "loading" : scoring}
+                  onScore={() => score(run)}
+                  onDrill={onDrill}
+                  briefing={(options) =>
+                    report
+                      ? coachBriefing(
+                          phase,
+                          contextOf(session),
+                          run,
+                          report,
+                          habitsBefore(run),
+                          options,
+                        )
+                      : ""
+                  }
+                  onDiscuss={(turns) =>
+                    update((s) => {
+                      const current = (s.artifacts[phase.id] as ReportArtifact | undefined) ?? {};
+                      const r = current[run.at];
+                      if (!r) return s;
+                      const discussion = [...(r.discussion ?? []), ...turns];
+                      return saveArtifact(s, phase.id, {
+                        ...current,
+                        [run.at]: { ...r, discussion },
+                      });
+                    })
+                  }
+                />
               )}
             </li>
           );
@@ -125,16 +162,111 @@ export function ReportPhaseView({
   );
 }
 
-function ReportBody({ phase, report }: { phase: ReportPhase; report: Report }) {
+function OpenRun({
+  phase,
+  run,
+  report,
+  scoring,
+  onScore,
+  onDrill,
+  briefing,
+  onDiscuss,
+}: {
+  phase: ReportPhase;
+  run: VoiceRun;
+  report: Report | undefined;
+  scoring: string | null;
+  onScore: () => void;
+  onDrill: ((habit: string) => void) | null;
+  briefing: (options?: { transcript?: boolean }) => string;
+  onDiscuss: (turns: ChatTurn[]) => void;
+}) {
+  const [cue, setCue] = useState<Cue | null>(null);
+  const [about, setAbout] = useState<Finding | null>(null);
+  const discussion = useRef<HTMLDivElement>(null);
+  const findings = report?.findings;
+
+  // Re-scoring renumbers findings, so a question can't stay pinned to the old one.
+  useEffect(() => {
+    if (findings) setAbout(null);
+  }, [findings]);
+
+  const hear = (f: Finding) => {
+    if (f.line !== null) setCue((c) => ({ line: f.line as number, n: (c?.n ?? 0) + 1 }));
+  };
+  const discuss = (f: Finding) => {
+    setAbout(f);
+    discussion.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+  };
+
+  return (
+    <div className="card-editor stack">
+      {report && (
+        <ReportBody
+          phase={phase}
+          report={report}
+          actions={{
+            atMs: (f) => recordingMs(run, f),
+            onHear: hear,
+            onDiscuss: discuss,
+            onDrill: onDrill ? (f) => onDrill(habitKey(f.habit)) : undefined,
+          }}
+        />
+      )}
+      {report && (
+        <button type="button" className="link" disabled={scoring !== null} onClick={onScore}>
+          {scoring === run.at
+            ? "Scoring again…"
+            : report.findings
+              ? "Score again"
+              : "Score again for rules, links to the recording and drills"}
+        </button>
+      )}
+      {report && (
+        <div ref={discussion}>
+          <Discussion
+            system={coachSystem(phase)}
+            briefing={briefing}
+            turns={report.discussion ?? []}
+            about={about}
+            onClearAbout={() => setAbout(null)}
+            onAdd={onDiscuss}
+          />
+        </div>
+      )}
+      <Replay run={run} cue={cue} />
+    </div>
+  );
+}
+
+function ReportBody({
+  phase,
+  report,
+  actions,
+}: {
+  phase: ReportPhase;
+  report: Report;
+  actions: FindingActions;
+}) {
   const m = report.metrics;
   const fillers = Object.entries(m.fillers)
     .sort((a, b) => b[1] - a[1])
     .map(([w, n]) => `${w} ×${n}`)
     .join(", ");
+  const focusIds = new Set(report.focus ?? []);
+  const focus = (report.findings ?? []).filter((f) => focusIds.has(f.id));
+  const rest = (report.findings ?? []).filter((f) => !focusIds.has(f.id));
 
   return (
     <div className="stack">
       <p className="billing-line">{report.summary}</p>
+
+      {focus.length > 0 && (
+        <div className="stack tight focus">
+          <h3 className="label">Work on this first</h3>
+          <FindingList findings={focus} rubric={phase.rubric} {...actions} />
+        </div>
+      )}
 
       <ol className="scores">
         {phase.rubric.map((c) => {
@@ -153,9 +285,20 @@ function ReportBody({ phase, report }: { phase: ReportPhase; report: Report }) {
         })}
       </ol>
 
+      {rest.length > 0 && (
+        <div className="stack tight">
+          <h3 className="label">Also noticed</h3>
+          <FindingList findings={rest} rubric={phase.rubric} {...actions} />
+        </div>
+      )}
+
       <div className="grid-2">
         <List title="Strengths" items={report.strengths} />
-        <List title="To practise" items={report.improvements} />
+        {report.improvements?.length ? (
+          <List title="To practise" items={report.improvements} />
+        ) : (
+          <HabitReviewList review={report.habitReview ?? []} />
+        )}
       </div>
 
       <dl className="metrics">
@@ -184,6 +327,34 @@ function ReportBody({ phase, report }: { phase: ReportPhase; report: Report }) {
   );
 }
 
+const REVIEW_STAMP = {
+  recurred: { label: "Again", tone: "bad" },
+  improved: { label: "Better", tone: "ok" },
+  "not-heard": { label: "Not heard", tone: "pending" },
+} as const;
+
+function HabitReviewList({ review }: { review: NonNullable<Report["habitReview"]> }) {
+  if (review.length === 0) return <div />;
+  return (
+    <div className="stack tight">
+      <h3 className="label">Since last time</h3>
+      <ul className="habit-review">
+        {review.map((r) => (
+          <li key={r.habit}>
+            <span className={`stamp ${REVIEW_STAMP[r.status].tone}`}>
+              {REVIEW_STAMP[r.status].label}
+            </span>
+            <span>
+              <strong>{r.habit}</strong>
+              {r.note && <span className="hint">{r.note}</span>}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function List({ title, items }: { title: string; items: string[] }) {
   return (
     <div className="stack tight">
@@ -207,4 +378,15 @@ function Metric({ label, value, hint }: { label: string; value: string; hint: st
       </dd>
     </div>
   );
+}
+
+/** Where the finding's line starts on the recording's clock (what the player shows). */
+function recordingMs(run: VoiceRun, f: Finding): number | null {
+  const line = f.line === null ? undefined : run.lines[f.line];
+  return line ? Math.max(0, line.startMs - (run.recordingOffsetMs ?? 0)) : null;
+}
+
+/** The list from disk may be older than the open session. */
+function withCurrent(sessions: TrainingSession[], current: TrainingSession): TrainingSession[] {
+  return [...sessions.filter((s) => s.id !== current.id), current];
 }

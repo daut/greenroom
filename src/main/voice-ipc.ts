@@ -33,13 +33,18 @@ export function registerVoiceIpc({ settingsStore, keyStore, ledger, recordingsDi
     const model = settings.models[request.kind];
     const preset = activePersona(settings);
     const persona = request.voice ? { ...preset, voice: request.voice } : preset;
-    const maxMinutes =
+    const limit =
       request.kind === "mock" ? settings.limits.mockMaxMinutes : settings.limits.drillMaxMinutes;
-    const task = `${request.task}\nPlanned length: about ${maxMinutes} minutes. You can't see a clock; the app will send you a note when time is nearly up and when it is up. Until then, keep going. Never cut the candidate off mid-answer.`;
+    const requested = Number(request.maxMinutes);
+    const maxMinutes =
+      Number.isFinite(requested) && requested > 0 ? Math.min(requested, limit) : limit;
+    const task = `${request.task}\nPlanned length: about ${maxMinutes} minutes. You can't see a clock; the app will send you a note when time is nearly up and when it is up. Until then, keep going. Never cut the user off mid-answer.`;
     const session = buildRealtimeSession({
       model,
       persona,
-      instructions: interviewerInstructions(persona, task, request.frame),
+      instructions: interviewerInstructions(persona, task, request.frame, {
+        coach: request.coach === true,
+      }),
       listenFirst: request.listenFirst === true,
     });
     const sdp = await createRealtimeCall({

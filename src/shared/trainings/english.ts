@@ -59,6 +59,8 @@ export const englishTraining: TrainingDefinition = {
           label: "What to work on",
           kind: "longtext",
           placeholder: "Articles, past tenses, sounding less formal in meetings…",
+          carryHabits: true,
+          hint: "Habits still open from earlier sessions are filled in for you.",
         },
       ],
     },
@@ -86,16 +88,19 @@ Topic: ${topic?.label}. Open the topic with one question, then keep a natural co
       rubric: RUBRIC,
       system:
         "You are an English teacher reviewing a spoken conversation by a non-native professional. Be specific and kind. The transcript is machine-transcribed, so it may already have smoothed some errors; judge what is there.",
-      prompt: (ctx, transcript, rubric) =>
-        `${goals(ctx)}
-
-Score the learner (the "Candidate") on each criterion from 1 to 5 with a short comment:
-${rubric}
-
-Then a 2-sentence summary. As strengths, give up to 3 things they did well. As improvements, give up to 5 corrections in the form: "You said: … → Better: …", choosing the most useful.
-
-Transcript:
-${transcript}`,
+      background: goals,
+      guidance: `What to look for:
+- Corrections: grammar (tenses, agreement, articles, prepositions, question forms, parallel verb forms) and word choice. Quote the exact words; "better" is how a fluent speaker would say it; "why" names the rule in plain words.
+- Habits: patterns in how they speak, such as repeating the question to buy time, a filler they lean on, trailing endings like "so yeah", or a structure they always avoid. "better" is a concrete alternative phrase they can use.
+- Content only when it hurt the conversation, e.g. an answer with no specifics.
+If the learner said they want to work on something, check that first. Skip slips that look like transcription errors.`,
+    },
+    {
+      kind: "drills",
+      id: "practice",
+      title: "Practice",
+      intro:
+        "Drill the corrections and habits from your reports, plus any still open from earlier sessions: typed reps, then say it out loud.",
     },
   ],
 };

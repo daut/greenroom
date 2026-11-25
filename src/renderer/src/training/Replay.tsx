@@ -2,14 +2,21 @@ import type { VoiceRun } from "@shared/training";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { clock } from "../voice/SessionPanel";
 
+/** A request to jump to a transcript line; `n` changes so the same line can be cued twice. */
+export interface Cue {
+  line: number;
+  n: number;
+}
+
 /** Plays a run's recording with the transcript following along; click a line to jump to it. */
-export function Replay({ run }: { run: VoiceRun }) {
+export function Replay({ run, cue = null }: { run: VoiceRun; cue?: Cue | null }) {
   const [url, setUrl] = useState<string | null>(null);
   const [missing, setMissing] = useState(false);
   const [nowMs, setNowMs] = useState(-1);
   const [playing, setPlaying] = useState(false);
   const [durationMs, setDurationMs] = useState(0);
   const audio = useRef<HTMLAudioElement>(null);
+  const lineRefs = useRef<(HTMLLIElement | null)[]>([]);
   const offset = run.recordingOffsetMs ?? 0;
   // MediaRecorder WebM has no duration header; fall back to the transcript's length.
   const transcriptMs = Math.max(0, ...run.lines.map((l) => l.endMs ?? l.startMs)) - offset;
@@ -38,6 +45,15 @@ export function Replay({ run }: { run: VoiceRun }) {
     setNowMs(recordingMs + offset);
     if (play) void el.play().catch(() => {});
   };
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: act only when a new cue arrives
+  useEffect(() => {
+    const line = cue ? run.lines[cue.line] : undefined;
+    if (!cue || !line) return;
+    lineRefs.current[cue.line]?.scrollIntoView({ block: "center", behavior: "smooth" });
+    if (url) seekTo(line.startMs - offset);
+    else setNowMs(line.startMs);
+  }, [cue]);
 
   const toggle = () => {
     const el = audio.current;
@@ -97,8 +113,14 @@ export function Replay({ run }: { run: VoiceRun }) {
       )}
       <ol className="script replay">
         {run.lines.map((line, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: lines are an immutable recorded list
-          <li key={i} className={i === active ? "now" : ""}>
+          <li
+            // biome-ignore lint/suspicious/noArrayIndexKey: lines are an immutable recorded list
+            key={i}
+            ref={(el) => {
+              lineRefs.current[i] = el;
+            }}
+            className={i === active ? "now" : ""}
+          >
             <button
               type="button"
               className="script-speaker link-plain"

@@ -4,6 +4,7 @@ import { trainingById } from "@shared/trainings";
 import { useEffect, useState } from "react";
 import { roman } from "../text";
 import { CardsPhaseView } from "./CardsPhaseView";
+import { DrillsPhaseView } from "./DrillsPhaseView";
 import { FormPhaseView } from "./FormPhaseView";
 import { GeneratePhaseView } from "./GeneratePhaseView";
 import { ReportPhaseView } from "./ReportPhaseView";
@@ -20,6 +21,7 @@ export function SessionScreen({ id, onBack }: { id: string; onBack: () => void }
   const { session, update } = useTrainingSession(id);
   const def = session ? trainingById(session.trainingId) : undefined;
   const [selected, setSelected] = useState<string | null>(null);
+  const [drillTarget, setDrillTarget] = useState<string | null>(null);
 
   // Pin the open phase so finishing it (e.g. generating) doesn't jump away; "Continue" unpins.
   useEffect(() => {
@@ -66,7 +68,10 @@ export function SessionScreen({ id, onBack }: { id: string; onBack: () => void }
                     className="act-item"
                     aria-current={p.id === current?.id ? "step" : undefined}
                     disabled={state === "locked"}
-                    onClick={() => setSelected(p.id)}
+                    onClick={() => {
+                      setDrillTarget(null);
+                      setSelected(p.id);
+                    }}
                   >
                     <span className="act-number">Act {roman(i + 1)}</span>
                     <span className="act-name">{p.title}</span>
@@ -91,6 +96,11 @@ export function SessionScreen({ id, onBack }: { id: string; onBack: () => void }
               update={update}
               onDone={goNext}
               onSelect={setSelected}
+              drillTarget={drillTarget}
+              onDrill={(phaseId, habit) => {
+                setDrillTarget(habit);
+                setSelected(phaseId);
+              }}
             />
           </div>
         )}
@@ -106,6 +116,8 @@ function PhaseView({
   update,
   onDone,
   onSelect,
+  drillTarget,
+  onDrill,
 }: {
   def: TrainingDefinition;
   phase: Phase;
@@ -113,6 +125,8 @@ function PhaseView({
   update: ReturnType<typeof useTrainingSession>["update"];
   onDone: () => void;
   onSelect: (id: string) => void;
+  drillTarget: string | null;
+  onDrill: (drillsPhaseId: string, habit: string) => void;
 }) {
   const shared = { def, session, update };
   switch (phase.kind) {
@@ -135,7 +149,17 @@ function PhaseView({
         />
       );
     }
-    case "report":
-      return <ReportPhaseView {...shared} phase={phase} />;
+    case "report": {
+      const drills = def.phases.find((p) => p.kind === "drills");
+      return (
+        <ReportPhaseView
+          {...shared}
+          phase={phase}
+          onDrill={drills ? (habit) => onDrill(drills.id, habit) : null}
+        />
+      );
+    }
+    case "drills":
+      return <DrillsPhaseView {...shared} phase={phase} initialTarget={drillTarget} />;
   }
 }

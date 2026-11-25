@@ -38,9 +38,12 @@ export function RunningTime({
 export function Transcript({
   lines,
   speaking,
+  them = "Interviewer",
 }: {
   lines: TranscriptLine[];
   speaking: TranscriptLine["speaker"] | null;
+  /** Who the voice plays. */
+  them?: string;
 }) {
   const list = useRef<HTMLOListElement>(null);
   const atBottom = useRef(true);
@@ -72,7 +75,7 @@ export function Transcript({
       <ol className="script" aria-live="polite" ref={list}>
         {lines.map((line) => (
           <li key={line.id} className={line.final ? "" : "pending"}>
-            <span className="script-speaker">{line.speaker === "you" ? "You" : "Interviewer"}</span>
+            <span className="script-speaker">{line.speaker === "you" ? "You" : them}</span>
             <span className="script-text">
               {line.text || (line.speaker === "you" ? "Listening…" : "…")}
             </span>
@@ -80,7 +83,7 @@ export function Transcript({
         ))}
         <li className="script-cue" aria-hidden={!speaking}>
           {speaking === "you" && "You are speaking"}
-          {speaking === "interviewer" && "Interviewer is speaking"}
+          {speaking === "interviewer" && `${them} is speaking`}
         </li>
       </ol>
     </div>

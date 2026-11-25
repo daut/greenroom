@@ -128,6 +128,16 @@ Handover notes for the next agent: see README "Development" and "Adding a traini
 - [x] `extract.ts` (TDD): `JobPosting` JSON-LD first (`@graph`, arrays, escaped HTML), else page text minus nav/header/footer/forms; login walls and near-empty pages → "paste the text instead"
 - [x] Verified live: Greenhouse, Lever, Ashby (JS-rendered), public LinkedIn job (JSON-LD), 404, DNS failure, http://
 
+### Actionable feedback (built)
+- [x] Structured findings (`src/shared/report.ts`, TDD): kind, criterion, severity, habit label, numbered-transcript line, quote → better, why, recurring; `focus`; `habitReview` of known habits. Old reports still render ("Score again" upgrades)
+- [x] Report UI: "Work on this first", "Also noticed", "Since last time"; per finding Hear it (cues Replay), Discuss, Drill this
+- [x] Discuss (`src/shared/coach.ts`, TDD): text chat with history replayed into each prompt (works with Claude Code); voice call via the drill model in coach mode, not recorded, transcript appended to the chat. Stored in `report.discussion`
+- [x] `drills` phase kind ("Practice") in all three trainings: typed reps (5 generated, checked item by item) and ~3-minute spoken reps with on-the-spot correction, then a check. Entries in the phase artifact
+- [x] Habits (`src/shared/habits.ts`, TDD): tracked across sessions per training (open / improving / fixed); known habits go to the scorer; English "What to work on" pre-fills; History lists them
+- [x] Voice: `coach` and `maxMinutes` on `VoiceCallRequest` (main validates), `record` option
+- [x] Verified live via Claude Code on the real English session: scoring, discussion reply and typed reps
+- [!] Voice discuss + spoken reps untested live; restart `npm run dev` first (main process changed)
+
 ### Release
 - [x] v0.1.1 released (sign-in fixes, link import, end_session prompt). Workflow pushed the cask to the tap itself; `brew audit --cask --strict --online` passes; `brew upgrade` to 0.1.1 tested and link import works in the installed app
 - [x] Cask now requires macOS Ventura (online audit: Electron's minimum); caveat no longer promises Developer ID signing
@@ -142,6 +152,8 @@ Handover notes for the next agent: see README "Development" and "Adding a traini
 - [x] Min-window Drill: cost + Start moved above the question list under 640px
 
 ## Log
+
+- 2026-11-26: Feedback made actionable: structured findings with rules and recording links, coach discussion (text + voice), Practice phase with typed and spoken reps, habits carried across sessions.
 
 - 2026-11-25: v0.1.2 released (gentle time limit). Tap updated by the workflow; strict online audit passes; brew upgrade tested.
 

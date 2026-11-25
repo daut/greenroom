@@ -1,3 +1,4 @@
+import { type Habit, type HabitStatus, trackHabits } from "@shared/habits";
 import type { TrainingSession } from "@shared/training";
 import { TRAININGS } from "@shared/trainings";
 import { scoreTrends, type Trend } from "@shared/trends";
@@ -34,6 +35,11 @@ export function History({ onOpenSession }: { onOpenSession: (id: string) => void
         <TrendChart key={t.key} trend={t} onOpenSession={onOpenSession} />
       ))}
 
+      {TRAININGS.map((def) => {
+        const habits = trackHabits(sessions, def);
+        return habits.length ? <HabitList key={def.id} title={def.title} habits={habits} /> : null;
+      })}
+
       <div className="programme">
         <h2 className="section-title">Sessions</h2>
         {sessions.length === 0 ? (
@@ -63,6 +69,38 @@ export function History({ onOpenSession }: { onOpenSession: (id: string) => void
         )}
       </div>
     </section>
+  );
+}
+
+const HABIT_STAMP: Record<HabitStatus, string> = {
+  open: "stamp",
+  improving: "stamp ok",
+  fixed: "stamp pending",
+};
+
+/** Patterns the reports keep finding, and whether practice is working. */
+function HabitList({ title, habits }: { title: string; habits: Habit[] }) {
+  return (
+    <div className="programme">
+      <h2 className="section-title">Habits · {title}</h2>
+      <ol className="script">
+        {habits.map((h) => (
+          <li key={h.key}>
+            <span className="script-speaker">
+              {h.label}
+              <span className={HABIT_STAMP[h.status]}>{h.status}</span>
+            </span>
+            <span className="script-text">
+              “{h.quote}” → <strong>{h.better}</strong>
+              <span className="item-detail">
+                Heard in {h.seen} run{h.seen === 1 ? "" : "s"}, last {shortDate(h.lastSeen)}
+                {h.drills ? ` · ${h.drills} drill round${h.drills === 1 ? "" : "s"}` : ""}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }
 

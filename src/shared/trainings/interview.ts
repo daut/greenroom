@@ -53,6 +53,11 @@ const RUBRIC: RubricCriterion[] = [
   },
 ];
 
+const FINDINGS_GUIDANCE = `What to look for:
+- Content: a missing result or number, an unclear personal role ("we" for everything), no trade-offs under follow-ups, an answer that misses what the question was testing. "better" is a short rewrite of how that part of the answer could go, in the candidate's own story; "why" says what the interviewer needed to hear.
+- Habits: rambling openings, repeating the question, hedging ("I think maybe"), weak endings, fillers. "better" is a concrete alternative phrase or structure.
+- Corrections only when wording changed the meaning or sounded unprofessional.`;
+
 const questions = generatePhase<QuestionBank>({
   kind: "generate",
   id: "questions",
@@ -170,16 +175,8 @@ Leave a minute for the candidate's questions and answer them briefly in characte
       rubric: RUBRIC,
       system:
         "You are an experienced interviewer writing honest, specific feedback after a mock interview. Score strictly: 3 is a typical hire-bar answer, 5 is exceptional. Quote or reference specific moments. The transcript is machine-transcribed, so ignore small transcription errors.",
-      prompt: (ctx, transcript, rubric) =>
-        `${background(ctx)}
-
-Score the candidate's interview on each criterion from 1 to 5 with a one-to-two sentence comment:
-${rubric}
-
-Then give a 2-3 sentence summary, up to 3 strengths, and up to 3 improvements, each concrete enough to practise.
-
-Transcript:
-${transcript}`,
+      background,
+      guidance: FINDINGS_GUIDANCE,
     },
     {
       kind: "report",
@@ -191,16 +188,17 @@ ${transcript}`,
       rubric: RUBRIC.filter((c) => c.id !== "relevance"),
       system:
         "You are an interview coach giving quick, specific feedback on a single-question drill. Score strictly: 3 is a typical hire-bar answer. The transcript is machine-transcribed; ignore small errors.",
-      prompt: (ctx, transcript, rubric) =>
-        `${background(ctx)}
-
-Score the answer on each criterion from 1 to 5 with a short comment:
-${rubric}
-
-Then a 1-2 sentence summary, up to 2 strengths and up to 2 improvements.
-
-Transcript:
-${transcript}`,
+      background,
+      guidance: FINDINGS_GUIDANCE,
+      maxFindings: 3,
+    },
+    {
+      kind: "drills",
+      id: "practice",
+      title: "Practice",
+      intro:
+        "Work on what the reports found, plus habits still open from earlier sessions: typed reps, then say it out loud.",
+      after: ["questions"],
     },
   ],
 };

@@ -17,7 +17,7 @@ export interface TrainingDefinition {
   sessionTitle?: (ctx: PhaseContext) => string | undefined;
 }
 
-export type Phase = FormPhase | GeneratePhase | CardsPhase | VoicePhase | ReportPhase;
+export type Phase = FormPhase | GeneratePhase | CardsPhase | VoicePhase | ReportPhase | DrillsPhase;
 
 interface PhaseBase {
   id: string;
@@ -35,6 +35,8 @@ export interface FormField {
   required?: boolean;
   placeholder?: string;
   hint?: string;
+  /** Starts a new session filled with the habits still open from earlier sessions. */
+  carryHabits?: boolean;
 }
 
 export interface FormPhase extends PhaseBase {
@@ -111,8 +113,22 @@ export interface ReportPhase extends PhaseBase {
   /** The voice phase whose runs are scored. */
   source: string;
   rubric: RubricCriterion[];
+  /** Who scores, e.g. "You are an English teacher…". Also the coach in discussions and drills. */
   system: string;
-  prompt: (ctx: PhaseContext, transcript: string, rubric: string) => string;
+  /** What the scorer and coach need to know about this session (goals, role, talk). */
+  background: (ctx: PhaseContext) => string;
+  /** Training-specific scoring guidance: how strict, which findings matter here. */
+  guidance: string;
+  /** Defaults to 6. */
+  maxFindings?: number;
+}
+
+/**
+ * Typed and spoken reps on the findings of this session's reports and on habits still open
+ * from earlier sessions. The coach is the first report phase's scorer.
+ */
+export interface DrillsPhase extends PhaseBase {
+  kind: "drills";
 }
 
 export interface TrainingSession {

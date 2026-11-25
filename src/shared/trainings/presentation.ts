@@ -131,16 +131,18 @@ Then thank the presenter and end the session.`,
       rubric: RUBRIC,
       system:
         "You are a presentation coach giving honest, specific feedback after a rehearsal. Score strictly: 3 is a competent talk, 5 is exceptional. Reference specific moments. The transcript is machine-transcribed; ignore small errors.",
-      prompt: (ctx, transcript, rubric) =>
-        `${background(ctx)}
-
-Score the presenter on each criterion from 1 to 5 with a one-to-two sentence comment:
-${rubric}
-
-Then a 2-3 sentence summary, up to 3 strengths and up to 3 improvements.
-
-Transcript (the "Candidate" is the presenter):
-${transcript}`,
+      background,
+      guidance: `The "Candidate" is the presenter. What to look for:
+- Content: a buried main message or ask, a missing transition between sections, an example that doesn't suit this audience, a Q&A answer that dodged the question. "better" is a rewritten sentence they could actually say on stage; "why" says what the audience loses without it.
+- Habits: weak openings ("so, um, today I'll…"), trailing endings, hedging, fillers, rushing. "better" is a concrete alternative phrase.
+- Corrections only when wording changed the meaning.`,
+    },
+    {
+      kind: "drills",
+      id: "practice",
+      title: "Practice",
+      intro:
+        "Work on what the report found, plus habits still open from earlier rehearsals: typed reps, then say it out loud.",
     },
   ],
 };

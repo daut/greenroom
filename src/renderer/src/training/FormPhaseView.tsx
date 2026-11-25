@@ -1,3 +1,4 @@
+import { carryOverText, knownHabits } from "@shared/habits";
 import {
   completePhase,
   type FormArtifact,
@@ -7,8 +8,9 @@ import {
   type TrainingDefinition,
   type TrainingSession,
 } from "@shared/training";
-import { useEffect, useRef, useState } from "react";
+import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from "react";
 import { errorMessage } from "../text";
+import { useAllSessions } from "./useAllSessions";
 import type { UpdateSession } from "./useTrainingSession";
 
 const AUTOSAVE_MS = 600;
@@ -35,6 +37,7 @@ export function FormPhaseView({
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => () => clearTimeout(timer.current), []);
+  useCarriedHabits(def, phase, session, setValues);
 
   const set = (id: string, value: string) => {
     const next = { ...values, [id]: value };
@@ -144,6 +147,35 @@ export function FormPhaseView({
       </div>
     </div>
   );
+}
+
+/** A fresh session starts with the habits still open from earlier ones in `carryHabits` fields. */
+function useCarriedHabits(
+  def: TrainingDefinition,
+  phase: FormPhase,
+  session: TrainingSession,
+  setValues: Dispatch<SetStateAction<FormArtifact>>,
+) {
+  const sessions = useAllSessions();
+  const fresh = useRef(session.artifacts[phase.id] === undefined);
+  useEffect(() => {
+    if (!sessions || !fresh.current) return;
+    fresh.current = false;
+    const text = carryOverText(
+      knownHabits(
+        sessions.filter((s) => s.id !== session.id),
+        def,
+      ),
+    );
+    const fields = phase.fields.filter((f) => f.carryHabits);
+    if (!text || fields.length === 0) return;
+    setValues((v) =>
+      Object.fromEntries([
+        ...Object.entries(v),
+        ...fields.filter((f) => !v[f.id]?.trim()).map((f) => [f.id, text]),
+      ]),
+    );
+  }, [sessions, def, phase, session.id, setValues]);
 }
 
 function LinkImport({
