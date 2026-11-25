@@ -21,7 +21,17 @@ curl -fsSL https://raw.githubusercontent.com/daut/greenroom/main/install.sh | sh
 
 Re-run to update; `sh -s -- --uninstall` removes it (your data stays). Builds are unsigned, so the
 script clears the macOS quarantine flag. Linux AppImages need `libfuse2`; a `.deb` is also on the
-releases page. A Homebrew cask is rendered for every release (`packaging/homebrew`).
+[releases page](https://github.com/daut/greenroom/releases).
+
+Or with Homebrew (macOS):
+
+```sh
+brew tap daut/tap && brew trust daut/tap
+brew install --cask greenroom
+```
+
+Homebrew prints an `xattr` command to run once before the first launch (the app isn't signed with
+an Apple Developer ID yet).
 
 ## Setup
 
@@ -72,7 +82,9 @@ npm run icon       # re-render build/icon.png
 ```
 
 Releases: bump `version` in `package.json`, tag `vX.Y.Z`, push the tag. CI builds macOS and Linux
-artifacts, writes `SHA256SUMS`, creates the GitHub Release and renders the Homebrew cask.
+artifacts, writes `SHA256SUMS`, creates the GitHub Release and renders the Homebrew cask as a
+workflow artifact; copy it to `Casks/greenroom.rb` in
+[daut/homebrew-tap](https://github.com/daut/homebrew-tap).
 
 ### Adding a training
 

@@ -16,7 +16,7 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo · `[!]` blocked / needs i
 | Backend         | Supabase (Postgres + RLS, Storage for recordings, magic-link auth)                                 |
 | Keys            | Main process only, encrypted with Electron `safeStorage`, env var fallback                         |
 | Settings        | Single versioned JSON (`settings.json` in userData), zod-validated, per-field fallback to defaults |
-| Distribution    | GitHub Releases + `install.sh` (curl) + Homebrew cask; unsigned macOS (ad-hoc)                     |
+| Distribution    | GitHub Releases + `install.sh` (curl) + Homebrew tap `daut/tap`; unsigned macOS (ad-hoc)           |
 | Package manager | npm                                                                                                |
 
 ## Milestones
@@ -35,8 +35,9 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo · `[!]` blocked / needs i
 - [x] CI workflow `.github/workflows/ci.yml` (check + build on macOS + Linux, shellcheck) — not yet run on GitHub
 - [x] Release workflow `.github/workflows/release.yml` (tag `v*` → build mac+linux, SHA256SUMS, GitHub Release, rendered cask artifact) — not yet run
 - [x] Homebrew cask template `packaging/homebrew/greenroom.rb.tmpl` + `scripts/update-cask.sh` (tested locally, shellcheck clean)
-- [!] Create GitHub repo `daut/greenroom` and push — needs your go-ahead
-- [!] Create tap repo `daut/homebrew-tap` — needs your go-ahead
+- [x] Public repo github.com/daut/greenroom; CI green on macOS + Linux
+- [x] Public tap github.com/daut/homebrew-tap with `Casks/greenroom.rb` (strict audit passes; real `brew install` tested)
+- [x] v0.1.0 released: mac zip/dmg (arm64, x64), Linux AppImage/deb (x64, arm64), SHA256SUMS; curl installer tested against it
 - [x] App icon (`build/icon.png`, rendered with Archivo by `npm run icon`)
 
 ### Design (impeccable)
@@ -113,12 +114,15 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo · `[!]` blocked / needs i
 ## What's left
 
 - [!] Your live tests: voice drill/mock/presentation with an OpenAI key; Supabase sync with a project
-- [!] Create GitHub repo + tap and cut v0.1.0 (needs your go-ahead)
+- [ ] Automate the tap update in the release workflow (needs a token secret with write access to the tap)
+- [ ] Apple Developer ID signing + notarization (removes the quarantine step; enables auto-update on macOS)
 - [ ] macOS packaged-app mic prompt check (TCC) once a key is in
 - [ ] Verify audio on Linux (PipeWire + PulseAudio)
 - [x] Min-window Drill: cost + Start moved above the question list under 640px
 
 ## Log
+
+- 2026-11-25: Public repos created, v0.1.0 released, cask published. Claude Code text provider off in release builds unless GREENROOM_ENABLE_CLAUDE_CODE=1.
 
 - 2026-11-25: Whole product built: training engine, interview/presentation/English trainings, reports + metrics, history + replay, Supabase sync, text providers incl. opt-in Claude Code, voice preview, icon. 135 tests. Blocked only on live keys/projects and repo go-ahead.
 
