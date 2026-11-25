@@ -224,7 +224,7 @@ function OpenRun({
       )}
       {report && (
         <div className="session-controls">
-          <button type="button" className="btn" onClick={() => discuss(null)}>
+          <button type="button" className="btn" data-coach-opener onClick={() => discuss(null)}>
             Discuss with the coach
           </button>
           {report.discussion?.length ? (

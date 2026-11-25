@@ -43,7 +43,7 @@ export function CoachPanel({
   const chat = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLElement>(null);
   const restoreFocus = useReturnFocus();
-  usePagePadding();
+  const [closing, setClosing] = useState(false);
 
   // Each new pin (or opening the panel) puts the cursor in the question box.
   // biome-ignore lint/correctness/useExhaustiveDependencies: refocus when the pinned finding changes
@@ -89,9 +89,10 @@ export function CoachPanel({
 
   /** Close and Escape hand focus back to the opener; a click elsewhere keeps it there. */
   const close = (returnFocus = true) => {
-    if (onCall) return;
+    if (onCall || closing) return;
     restoreFocus.current = returnFocus;
-    onClose();
+    if (hasAnimation(panel.current)) setClosing(true);
+    else onClose();
   };
   useClickOutside(panel, () => close(false));
   const lastAsked = turns.findLast((t) => t.role === "you")?.findingId;
@@ -100,8 +101,11 @@ export function CoachPanel({
   return (
     <aside
       ref={panel}
-      className="coach-panel"
+      className={closing ? "coach-panel closing" : "coach-panel"}
       aria-label="Coach"
+      onAnimationEnd={(e) => {
+        if (closing && e.target === e.currentTarget) onClose();
+      }}
       onKeyDown={(e) => {
         if (e.key === "Escape") close();
       }}
@@ -242,19 +246,19 @@ function useClickOutside(ref: RefObject<HTMLElement | null>, onOutside: () => vo
   handler.current = onOutside;
   useEffect(() => {
     const onPointerDown = (e: PointerEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) handler.current();
+      const target = e.target as Element;
+      // Openers (Discuss links) re-target the panel instead of closing it.
+      if (target.closest?.("[data-coach-opener]")) return;
+      if (ref.current && !ref.current.contains(target)) handler.current();
     };
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [ref]);
 }
 
-/** On wide windows the page makes room so the panel doesn't cover the report. */
-function usePagePadding() {
-  useEffect(() => {
-    document.documentElement.dataset.coach = "open";
-    return () => {
-      delete document.documentElement.dataset.coach;
-    };
-  }, []);
+/** Reduced motion (and test DOMs) have no animation, so there's no end event to wait for. */
+function hasAnimation(el: HTMLElement | null): boolean {
+  if (!el) return false;
+  const name = getComputedStyle(el).animationName;
+  return Boolean(name) && name !== "none";
 }

@@ -62,7 +62,7 @@ export function FindingItem({
             </button>
           )}
           {onDiscuss && (
-            <button type="button" className="link" onClick={() => onDiscuss(f)}>
+            <button type="button" className="link" data-coach-opener onClick={() => onDiscuss(f)}>
               Discuss
             </button>
           )}

@@ -1178,20 +1178,39 @@ textarea {
   width: min(440px, calc(100vw - 232px));
   background: var(--sheet);
   border-left: var(--rule-w) solid var(--ink);
-  animation: coach-in 200ms var(--ease-out);
+  animation: coach-in 320ms var(--ease-out);
 }
 
+.coach-panel.closing {
+  animation: coach-out 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  pointer-events: none;
+}
+
+/* Slides in from the window edge; the contents follow a beat later. */
 @keyframes coach-in {
   from {
-    transform: translateX(24px);
-    opacity: 0;
+    transform: translateX(100%);
   }
 }
 
-/* Wide windows make room for the panel; narrow ones let it sit over the report. */
-@media (min-width: 1240px) {
-  :root[data-coach="open"] .content {
-    padding-right: 440px;
+@keyframes coach-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.coach-panel > * {
+  animation: coach-content-in 260ms 90ms var(--ease-out) backwards;
+}
+
+.coach-panel.closing > * {
+  animation: none;
+}
+
+@keyframes coach-content-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
   }
 }
 
