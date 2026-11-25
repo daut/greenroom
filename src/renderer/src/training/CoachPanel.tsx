@@ -1,6 +1,6 @@
 import { discussPrompt, VOICE_COACH_FRAME, voiceCoachTask, voiceTurns } from "@shared/coach";
 import type { ChatTurn, Finding } from "@shared/report";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { type RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { RichText } from "../components/RichText";
 import { errorMessage } from "../text";
 import { askText } from "./ask";
@@ -41,7 +41,8 @@ export function CoachPanel({
   const [onCall, setOnCall] = useState(false);
   const input = useRef<HTMLTextAreaElement>(null);
   const chat = useRef<HTMLDivElement>(null);
-  useReturnFocus();
+  const panel = useRef<HTMLElement>(null);
+  const restoreFocus = useReturnFocus();
   usePagePadding();
 
   // Each new pin (or opening the panel) puts the cursor in the question box.
@@ -86,14 +87,19 @@ export function CoachPanel({
     [onAdd],
   );
 
-  const close = () => {
-    if (!onCall) onClose();
+  /** Close and Escape hand focus back to the opener; a click elsewhere keeps it there. */
+  const close = (returnFocus = true) => {
+    if (onCall) return;
+    restoreFocus.current = returnFocus;
+    onClose();
   };
+  useClickOutside(panel, () => close(false));
   const lastAsked = turns.findLast((t) => t.role === "you")?.findingId;
   const showStarters = !pending && (turns.length === 0 || about?.id !== lastAsked);
 
   return (
     <aside
+      ref={panel}
       className="coach-panel"
       aria-label="Coach"
       onKeyDown={(e) => {
@@ -102,7 +108,7 @@ export function CoachPanel({
     >
       <header className="coach-head">
         <h2 className="section-title">Coach</h2>
-        <button type="button" className="link" disabled={onCall} onClick={close}>
+        <button type="button" className="link" disabled={onCall} onClick={() => close()}>
           {onCall ? "On a call" : "Close"}
         </button>
       </header>
@@ -218,10 +224,29 @@ export function CoachPanel({
   );
 }
 
-/** When the panel goes away, focus returns to whatever opened it. */
+/** When the panel goes away, focus returns to whatever opened it, unless told otherwise. */
 function useReturnFocus() {
   const [opener] = useState(() => document.activeElement as HTMLElement | null);
-  useEffect(() => () => opener?.focus(), [opener]);
+  const restore = useRef(true);
+  useEffect(
+    () => () => {
+      if (restore.current) opener?.focus();
+    },
+    [opener],
+  );
+  return restore;
+}
+
+function useClickOutside(ref: RefObject<HTMLElement | null>, onOutside: () => void) {
+  const handler = useRef(onOutside);
+  handler.current = onOutside;
+  useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) handler.current();
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [ref]);
 }
 
 /** On wide windows the page makes room so the panel doesn't cover the report. */

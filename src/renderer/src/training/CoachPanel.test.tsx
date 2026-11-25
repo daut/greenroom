@@ -25,6 +25,7 @@ function Harness({ about = null }: { about?: Finding | null }) {
       <button type="button" onClick={() => setOpen(true)}>
         Open coach
       </button>
+      <input aria-label="Elsewhere" />
       {open && (
         <CoachPanel
           system=""
@@ -81,5 +82,26 @@ describe("CoachPanel", () => {
 
     expect(screen.queryByRole("complementary", { name: "Coach" })).toBeNull();
     expect(document.activeElement).toBe(opener);
+  });
+
+  it("closes on a click outside without pulling focus back to the opener", () => {
+    render(<Harness about={finding} />);
+    openFromButton();
+    const elsewhere = screen.getByLabelText("Elsewhere");
+
+    fireEvent.pointerDown(elsewhere);
+    elsewhere.focus();
+
+    expect(screen.queryByRole("complementary", { name: "Coach" })).toBeNull();
+    expect(document.activeElement).toBe(elsewhere);
+  });
+
+  it("stays open on a click inside", () => {
+    render(<Harness about={finding} />);
+    openFromButton();
+
+    fireEvent.pointerDown(screen.getByText("Whole report"));
+
+    expect(screen.getByRole("complementary", { name: "Coach" })).toBeTruthy();
   });
 });
