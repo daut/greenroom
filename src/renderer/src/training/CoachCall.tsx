@@ -1,6 +1,8 @@
+import { estimateSessionCostUsd } from "@shared/billing";
 import type { Settings } from "@shared/settings";
 import type { VoiceRun } from "@shared/training";
 import { useEffect, useRef, useState } from "react";
+import { formatUsd } from "../text";
 import { SessionBilling } from "../voice/SessionBilling";
 import { RunningTime, Transcript } from "../voice/SessionPanel";
 import { useVoiceSession } from "../voice/useVoiceSession";
@@ -20,9 +22,17 @@ export function CoachCall({
   task,
   maxMinutes,
   onFinished,
+  teaser,
+  intro,
+  onLiveChange,
 }: {
+  /** Shown above the controls once expanded. */
+  intro?: string;
   /** Button text, e.g. "Talk it through". */
   label: string;
+  /** When set, only this link shows (with length and cost) until clicked. */
+  teaser?: string;
+  onLiveChange?: (live: boolean) => void;
   frame: string;
   task: () => string;
   maxMinutes?: number;
@@ -31,6 +41,7 @@ export function CoachCall({
   const [settings, setSettings] = useState<Settings | null>(null);
   const voice = useVoiceSession(settings?.audio ?? null);
   const handled = useRef(true);
+  const [expanded, setExpanded] = useState(!teaser);
   const latest = useRef({ voice, onFinished });
   latest.current = { voice, onFinished };
 
@@ -66,8 +77,28 @@ export function CoachCall({
   const live =
     voice.status === "live" || voice.status === "connecting" || voice.status === "ending";
 
+  useEffect(() => {
+    onLiveChange?.(live);
+  }, [live, onLiveChange]);
+
+  if (!expanded) {
+    return (
+      <button
+        type="button"
+        className="link"
+        disabled={!settings}
+        aria-expanded={false}
+        onClick={() => setExpanded(true)}
+      >
+        {teaser}
+        {settings ? ` · ${callSummary(settings, maxMinutes)}` : ""}
+      </button>
+    );
+  }
+
   return (
     <div className="stack tight">
+      {intro && <p className="hint">{intro}</p>}
       {settings && !live && (
         <SessionBilling settings={settings} kind="drill" maxMinutes={maxMinutes} />
       )}
@@ -118,4 +149,10 @@ function keptLines(lines: ReturnType<typeof useVoiceSession>["transcript"]["line
   return lines
     .filter((l) => l.text.trim())
     .map(({ speaker, text, startMs, endMs }) => ({ speaker, text, startMs, endMs }));
+}
+
+function callSummary(settings: Settings, maxMinutes: number | undefined): string {
+  const minutes = Math.min(maxMinutes ?? Infinity, settings.limits.drillMaxMinutes);
+  const cost = estimateSessionCostUsd(settings.models.drill, minutes);
+  return `up to ${minutes} min${cost === null ? "" : `, about ${formatUsd(cost)}`}`;
 }

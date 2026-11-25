@@ -20,10 +20,10 @@ import {
   type VoiceArtifact,
   type VoiceRun,
 } from "@shared/training";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { dateTime, errorMessage } from "../text";
 import { askStructured } from "./ask";
-import { Discussion } from "./Discussion";
+import { CoachPanel } from "./CoachPanel";
 import { type FindingActions, FindingList } from "./Findings";
 import { type Cue, Replay } from "./Replay";
 import { useAllSessions } from "./useAllSessions";
@@ -183,7 +183,7 @@ function OpenRun({
 }) {
   const [cue, setCue] = useState<Cue | null>(null);
   const [about, setAbout] = useState<Finding | null>(null);
-  const discussion = useRef<HTMLDivElement>(null);
+  const [coachOpen, setCoachOpen] = useState(false);
   const findings = report?.findings;
 
   // Re-scoring renumbers findings, so a question can't stay pinned to the old one.
@@ -194,9 +194,9 @@ function OpenRun({
   const hear = (f: Finding) => {
     if (f.line !== null) setCue((c) => ({ line: f.line as number, n: (c?.n ?? 0) + 1 }));
   };
-  const discuss = (f: Finding) => {
+  const discuss = (f: Finding | null) => {
     setAbout(f);
-    discussion.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+    setCoachOpen(true);
   };
 
   return (
@@ -223,16 +223,27 @@ function OpenRun({
         </button>
       )}
       {report && (
-        <div ref={discussion}>
-          <Discussion
-            system={coachSystem(phase)}
-            briefing={briefing}
-            turns={report.discussion ?? []}
-            about={about}
-            onClearAbout={() => setAbout(null)}
-            onAdd={onDiscuss}
-          />
+        <div className="session-controls">
+          <button type="button" className="btn" onClick={() => discuss(null)}>
+            Discuss with the coach
+          </button>
+          {report.discussion?.length ? (
+            <span className="stamp pending">
+              {report.discussion.length} message{report.discussion.length === 1 ? "" : "s"}
+            </span>
+          ) : null}
         </div>
+      )}
+      {report && coachOpen && (
+        <CoachPanel
+          system={coachSystem(phase)}
+          briefing={briefing}
+          turns={report.discussion ?? []}
+          about={about}
+          onClearAbout={() => setAbout(null)}
+          onAdd={onDiscuss}
+          onClose={() => setCoachOpen(false)}
+        />
       )}
       <Replay run={run} cue={cue} />
     </div>

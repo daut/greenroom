@@ -1165,10 +1165,71 @@ textarea {
   display: block;
 }
 
-/* ---------- Discussion ---------- */
+/* ---------- Coach panel: a sheet pinned to the right, framed by one ink rule ---------- */
 
-.discussion {
-  padding-top: 16px;
+.coach-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  width: min(440px, calc(100vw - 232px));
+  background: var(--sheet);
+  border-left: var(--rule-w) solid var(--ink);
+  animation: coach-in 200ms var(--ease-out);
+}
+
+@keyframes coach-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+
+/* Wide windows make room for the panel; narrow ones let it sit over the report. */
+@media (min-width: 1240px) {
+  :root[data-coach="open"] .content {
+    padding-right: 440px;
+  }
+}
+
+.coach-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 28px 24px 16px;
+  border-bottom: var(--rule-w) solid var(--ink);
+}
+
+.coach-about {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 16px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.coach-chat {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 24px;
+}
+
+.coach-chat > .hint {
+  padding: 12px 0;
+}
+
+.coach-compose {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 24px 20px;
   border-top: var(--rule-w) solid var(--ink);
 }
 
@@ -1177,37 +1238,36 @@ textarea {
   padding: 0;
 }
 
-.chat li {
-  display: grid;
-  grid-template-columns: 110px 1fr;
-  gap: 16px;
-  align-items: baseline;
+.chat > li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   padding: 12px 0;
   border-bottom: 1px solid var(--rule);
+}
+
+.chat > li:last-child {
+  border-bottom: none;
 }
 
 .chat-text {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-width: 70ch;
 }
 
 .chat-you .chat-text {
   font-weight: 600;
 }
 
-.chat-about {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px 12px;
+.coach-compose > .link {
+  align-self: flex-start;
 }
 
 .starters {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px 18px;
 }
 
 .chat-input {
@@ -1217,7 +1277,7 @@ textarea {
 }
 
 .chat-input textarea {
-  resize: vertical;
+  resize: none;
 }
 
 /* ---------- Typed reps ---------- */

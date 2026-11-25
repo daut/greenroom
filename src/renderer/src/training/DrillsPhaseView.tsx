@@ -230,15 +230,13 @@ function TargetPanel({
 
       <div className="stack tight">
         <h3 className="label">Say it</h3>
-        <p className="hint">
-          About {SPOKEN_DRILL_MINUTES} minutes of quick spoken reps. The coach corrects you on the
-          spot and has you say it again.
-        </p>
         <CoachCall
+          teaser="Say it out loud"
           label="Start spoken reps"
           frame={SPOKEN_DRILL_FRAME}
           maxMinutes={SPOKEN_DRILL_MINUTES}
           task={() => spokenDrillTask(background, target)}
+          intro="Quick spoken reps: the coach corrects you on the spot and has you say it again."
           onFinished={spoke}
         />
         {busy === "listening" && <p className="hint">Checking how it went…</p>}
