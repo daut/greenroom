@@ -143,6 +143,8 @@ Handover notes for the next agent: see README "Development" and "Adding a traini
 
 ## Log
 
+- 2026-11-25: v0.1.2 released (gentle time limit). Tap updated by the workflow; strict online audit passes; brew upgrade tested.
+
 - 2026-11-25: Time limit no longer cuts you off: the interviewer is warned, then closes after your answer; hard stop only after overtime.
 
 - 2026-11-25: Link import built and verified live. Sound check log reviewed (no double replies; end_session missed → prompt fix). Supabase sync verified server-side. Tap update automated with a deploy key. Apple signing dropped (won't do). v0.1.1 released via the automated tap push.
