@@ -89,7 +89,7 @@ export const interviewTraining: TrainingDefinition = {
       kind: "form",
       id: "setup",
       title: "The role",
-      intro: "Everything the interviewer should know. Paste text or import a file.",
+      intro: "Everything the interviewer should know. Paste text, or import a file or a link.",
       fields: [
         {
           id: "role",

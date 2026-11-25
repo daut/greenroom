@@ -102,6 +102,8 @@ export interface GreenroomApi {
   files: {
     /** Opens a file picker for a CV or notes file; null when cancelled. */
     pickDocument(): Promise<{ name: string; text: string } | null>;
+    /** Reads a web page (e.g. a job posting); `name` is the host. */
+    importUrl(url: string): Promise<{ name: string; text: string }>;
   };
   text: {
     /** Text or, when `schema` is set, the parsed JSON object. */
@@ -134,6 +136,7 @@ export const IPC = {
   sessionsSave: "sessions:save",
   sessionsRemove: "sessions:remove",
   filesPickDocument: "files:pick-document",
+  filesImportUrl: "files:import-url",
   syncStatus: "sync:status",
   syncSendCode: "sync:send-code",
   syncVerifyCode: "sync:verify-code",

@@ -42,6 +42,7 @@ const api: GreenroomApi = {
   },
   files: {
     pickDocument: () => ipcRenderer.invoke(IPC.filesPickDocument),
+    importUrl: (url) => ipcRenderer.invoke(IPC.filesImportUrl, url),
   },
   text: {
     complete: (request) => ipcRenderer.invoke(IPC.textComplete, request),

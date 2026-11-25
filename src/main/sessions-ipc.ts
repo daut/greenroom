@@ -2,6 +2,8 @@ import { IPC } from "@shared/api";
 import type { TrainingSession } from "@shared/training";
 import { BrowserWindow, dialog, ipcMain } from "electron";
 import { DOCUMENT_EXTENSIONS, readDocumentText } from "./documents";
+import { extractDocument } from "./link-import/extract";
+import { loadPage } from "./link-import/load-page";
 import type { SessionStore } from "./session-store";
 
 export function registerSessionsIpc(store: SessionStore, onChange: () => void) {
@@ -30,5 +32,10 @@ export function registerSessionsIpc(store: SessionStore, onChange: () => void) {
       : await dialog.showOpenDialog(options);
     const path = result.filePaths[0];
     return result.canceled || !path ? null : readDocumentText(path);
+  });
+
+  ipcMain.handle(IPC.filesImportUrl, async (_e, url: unknown) => {
+    if (typeof url !== "string") throw new Error("Enter a link.");
+    return extractDocument(await loadPage(url));
   });
 }

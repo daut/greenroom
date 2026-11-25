@@ -30,6 +30,7 @@ export function FormPhaseView({
     () => (session.artifacts[phase.id] as FormArtifact | undefined) ?? {},
   );
   const [imported, setImported] = useState<Record<string, string>>({});
+  const [linkField, setLinkField] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -49,11 +50,15 @@ export function FormPhaseView({
       if (!doc) return;
       if (!doc.text.trim())
         throw new Error(`${doc.name} has no readable text (is it a scanned PDF?).`);
-      set(field.id, doc.text);
-      setImported((m) => ({ ...m, [field.id]: doc.name }));
+      fill(field, doc);
     } catch (e) {
       setError(errorMessage(e));
     }
+  };
+
+  const fill = (field: FormField, doc: { name: string; text: string }) => {
+    set(field.id, doc.text);
+    setImported((m) => ({ ...m, [field.id]: doc.name }));
   };
 
   const missing = phase.fields.filter((f) => f.required && !values[f.id]?.trim());
@@ -78,11 +83,31 @@ export function FormPhaseView({
               {field.required ? "" : " (optional)"}
             </label>
             {field.kind === "document" && (
-              <button type="button" className="link" onClick={() => importFile(field)}>
-                Import PDF, TXT or Markdown
-              </button>
+              <span className="field-actions">
+                <button type="button" className="link" onClick={() => importFile(field)}>
+                  Import PDF, TXT or Markdown
+                </button>
+                <button
+                  type="button"
+                  className="link"
+                  aria-expanded={linkField === field.id}
+                  onClick={() => setLinkField(linkField === field.id ? null : field.id)}
+                >
+                  Import from link
+                </button>
+              </span>
             )}
           </div>
+          {linkField === field.id && (
+            <LinkImport
+              field={field}
+              onImported={(doc) => {
+                fill(field, doc);
+                setLinkField(null);
+              }}
+              onCancel={() => setLinkField(null)}
+            />
+          )}
           {field.kind === "text" ? (
             <input
               id={`f-${field.id}`}
@@ -118,5 +143,69 @@ export function FormPhaseView({
         <span className="hint">Drafts save as you type.</span>
       </div>
     </div>
+  );
+}
+
+function LinkImport({
+  field,
+  onImported,
+  onCancel,
+}: {
+  field: FormField;
+  onImported: (doc: { name: string; text: string }) => void;
+  onCancel: () => void;
+}) {
+  const [url, setUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const inputId = `link-${field.id}`;
+
+  const run = async () => {
+    if (!url.trim() || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      onImported(await window.greenroom.files.importUrl(url));
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="key-controls">
+        <label htmlFor={inputId} className="visually-hidden">
+          Link to import into {field.label}
+        </label>
+        <input
+          id={inputId}
+          type="url"
+          placeholder="https://"
+          value={url}
+          disabled={busy}
+          // biome-ignore lint/a11y/noAutofocus: the field appears because the user asked for it
+          autoFocus
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") run();
+            if (e.key === "Escape") onCancel();
+          }}
+          spellCheck={false}
+        />
+        <button type="button" className="btn primary" disabled={!url.trim() || busy} onClick={run}>
+          {busy ? "Reading page" : "Import"}
+        </button>
+        <button type="button" className="btn" disabled={busy} onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+      {error && (
+        <p className="warn-text" role="alert">
+          {error}
+        </p>
+      )}
+    </>
   );
 }
