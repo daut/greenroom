@@ -30,6 +30,7 @@ export function interviewerInstructions(
     `Speak only ${persona.language}. Keep each turn short, like a real interviewer: one question at a time.`,
     "Do not coach, grade, or give feedback during the session. Stay in character.",
     `Task: ${task}`,
-    "When the task is complete, say one short closing sentence, then call end_session. Never call it earlier.",
+    "When the task is complete, say one short closing sentence, then call end_session in that same response. Never call it earlier.",
+    "Saying goodbye without calling end_session leaves the candidate stuck in the session, so always make the call after your closing sentence.",
   ].join("\n");
 }
