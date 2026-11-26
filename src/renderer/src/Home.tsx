@@ -7,27 +7,34 @@ import { type ReactNode, useEffect, useState } from "react";
 import { type KeyState, useKeyStates } from "./keyStatus";
 import { SessionRow } from "./SessionRow";
 import { capitalize, formatUsd } from "./text";
+import { SOUND_CHECK_MINUTES } from "./voice/SoundCheck";
 
 export function Home({
   onOpenSettings,
   onOpenSession,
   onOpenHistory,
+  onOpenSoundCheck,
 }: {
   onOpenSettings: () => void;
   onOpenSession: (id: string) => void;
   onOpenHistory: () => void;
+  onOpenSoundCheck: () => void;
 }) {
   const keys = useKeyStates();
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [sessions, setSessions] = useState<TrainingSession[]>([]);
+  const [sessions, setSessions] = useState<TrainingSession[] | null>(null);
 
   useEffect(() => {
     window.greenroom.settings.get().then(setSettings);
     window.greenroom.sessions.list().then(setSessions);
   }, []);
 
-  const inProgress = sessions.filter((s) => !isFinished(s)).slice(0, 4);
-  const finished = recentlyFinished(sessions).slice(0, 3);
+  const neededKeys = settings
+    ? keys.filter((k) => k.provider === "openai" || settings.text.provider === "anthropic")
+    : [];
+  const firstRun = sessions !== null && sessions.length === 0 && keysUsable(neededKeys);
+  const inProgress = (sessions ?? []).filter((s) => !isFinished(s)).slice(0, 4);
+  const finished = recentlyFinished(sessions ?? []).slice(0, 3);
 
   const start = async (trainingId: string) => {
     const def = trainingById(trainingId);
@@ -40,13 +47,18 @@ export function Home({
     <section className="page">
       <h1 className="page-title">Tonight's programme</h1>
 
-      {settings && (
-        <KeyNotice
-          keys={keys.filter(
-            (k) => k.provider === "openai" || settings.text.provider === "anthropic",
-          )}
-          onOpenSettings={onOpenSettings}
-        />
+      {settings && <KeyNotice keys={neededKeys} onOpenSettings={onOpenSettings} />}
+
+      {firstRun && (
+        <Notice
+          stamp="First time"
+          title="Check your sound"
+          action="Sound check"
+          onAction={onOpenSoundCheck}
+        >
+          A {SOUND_CHECK_MINUTES}-minute warm-up with your interviewer to make sure the mic,
+          headphones and voice work before your first rehearsal.
+        </Notice>
       )}
 
       {inProgress.length > 0 && (
@@ -197,6 +209,10 @@ function Billing({ settings, onOpenSettings }: { settings: Settings; onOpenSetti
       </div>
     </div>
   );
+}
+
+function keysUsable(keys: KeyState[]): boolean {
+  return keys.length > 0 && keys.every((k) => k.readiness !== "none" && k.readiness !== "rejected");
 }
 
 function labels(keys: KeyState[]): string {

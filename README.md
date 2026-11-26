@@ -52,7 +52,8 @@ Open **Settings** (`Cmd/Ctrl + ,`).
      `GREENROOM_ENABLE_CLAUDE_CODE=1` to turn it on (always on in `npm run dev`). Greenroom
      doesn't bundle Claude Code; install it with `brew install --cask claude-code` and run
      `claude` once to log in.
-3. **Sound check** in the sidebar: a two-minute warm-up to check mic, headphones and voice.
+3. **Audio → Run full sound check** (also offered on Home before your first session): a
+   two-minute warm-up to check mic, headphones and voice.
 
 Keys live in the main process only, encrypted with the OS keychain (`OPENAI_API_KEY` /
 `ANTHROPIC_API_KEY` env vars work too). Settings are a hand-editable `settings.json`

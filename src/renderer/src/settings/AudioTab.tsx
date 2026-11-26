@@ -1,10 +1,21 @@
+import { estimateSessionCostUsd } from "@shared/billing";
 import type { Settings } from "@shared/settings";
 import { useCallback, useEffect, useState } from "react";
 import { Field, Toggle } from "../components/fields";
+import { formatUsd } from "../text";
+import { SOUND_CHECK_MINUTES } from "../voice/SoundCheck";
 import type { UpdateSettings } from "./SettingsPage";
 import { useMicLevel } from "./useMicLevel";
 
-export function AudioTab({ settings, update }: { settings: Settings; update: UpdateSettings }) {
+export function AudioTab({
+  settings,
+  update,
+  onOpenSoundCheck,
+}: {
+  settings: Settings;
+  update: UpdateSettings;
+  onOpenSoundCheck: () => void;
+}) {
   const { inputs, outputs, labelsHidden, refresh } = useAudioDevices();
   const [testing, setTesting] = useState(false);
   const level = useMicLevel(testing ? settings.audio.inputDeviceId : null);
@@ -72,6 +83,24 @@ export function AudioTab({ settings, update }: { settings: Settings; update: Upd
         checked={settings.audio.recordSessions}
         onChange={(recordSessions) => setAudio({ recordSessions })}
       />
+
+      <SoundCheckLink settings={settings} onOpen={onOpenSoundCheck} />
+    </div>
+  );
+}
+
+/** The mic test above is free and local; this one is a real, paid voice session. */
+function SoundCheckLink({ settings, onOpen }: { settings: Settings; onOpen: () => void }) {
+  const cost = estimateSessionCostUsd(settings.models.drill, SOUND_CHECK_MINUTES);
+  return (
+    <div className="mic-test">
+      <button type="button" className="btn" onClick={onOpen}>
+        Run full sound check
+      </button>
+      <span className="hint">
+        A {SOUND_CHECK_MINUTES}-minute warm-up with your interviewer to check headphones and voice
+        end to end. Uses the drill voice model{cost === null ? "" : `, about ${formatUsd(cost)}`}.
+      </span>
     </div>
   );
 }

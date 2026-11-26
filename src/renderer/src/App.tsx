@@ -5,23 +5,28 @@ import { useEffect, useState } from "react";
 import { History } from "./History";
 import { Home } from "./Home";
 import { type Readiness, useKeyStates } from "./keyStatus";
-import { SETTINGS_CHANGED, SettingsPage } from "./settings/SettingsPage";
+import { SETTINGS_CHANGED, SettingsPage, type SettingsTab } from "./settings/SettingsPage";
 import { SessionScreen } from "./training/SessionScreen";
 import { SoundCheck } from "./voice/SoundCheck";
 
-type View = { page: Route } | { page: "session"; id: string };
+type View = { page: Route; tab?: SettingsTab } | { page: "session"; id: string };
 
 const NAV: { route: Route; label: string }[] = [
   { route: "home", label: "Home" },
   { route: "history", label: "History" },
-  { route: "soundcheck", label: "Sound check" },
   { route: "settings", label: "Settings" },
 ];
+
+/** Sound check has no rail item; it belongs under Settings. */
+const RAIL_PARENT: Partial<Record<View["page"], Route>> = { soundcheck: "settings" };
 
 export function App() {
   const [view, setView] = useState<View>({ page: "home" });
   const go = (page: Route) => setView({ page });
   const openSession = (id: string) => setView({ page: "session", id });
+  const openSoundCheck = () => go("soundcheck");
+  const openAudioSettings = () => setView({ page: "settings", tab: "audio" });
+  const railPage = RAIL_PARENT[view.page] ?? view.page;
 
   useEffect(() => window.greenroom.app.onNavigate((page) => setView({ page })), []);
 
@@ -42,7 +47,7 @@ export function App() {
             key={item.route}
             type="button"
             className="rail-item"
-            aria-current={view.page === item.route ? "page" : undefined}
+            aria-current={railPage === item.route ? "page" : undefined}
             onClick={() => go(item.route)}
           >
             {item.label}
@@ -56,14 +61,21 @@ export function App() {
             onOpenSettings={() => go("settings")}
             onOpenSession={openSession}
             onOpenHistory={() => go("history")}
+            onOpenSoundCheck={openSoundCheck}
           />
         )}
         {view.page === "history" && <History onOpenSession={openSession} />}
         {view.page === "session" && (
           <SessionScreen key={view.id} id={view.id} onBack={() => go("history")} />
         )}
-        {view.page === "soundcheck" && <SoundCheck />}
-        {view.page === "settings" && <SettingsPage />}
+        {view.page === "soundcheck" && <SoundCheck onBack={openAudioSettings} />}
+        {view.page === "settings" && (
+          <SettingsPage
+            key={view.tab ?? "default"}
+            initialTab={view.tab}
+            onOpenSoundCheck={openSoundCheck}
+          />
+        )}
       </main>
     </div>
   );

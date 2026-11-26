@@ -14,11 +14,17 @@ const TABS = [
   { id: "sync", label: "Sync & data" },
 ] as const;
 
-type TabId = (typeof TABS)[number]["id"];
+export type SettingsTab = (typeof TABS)[number]["id"];
 export type UpdateSettings = (change: (current: Settings) => Settings) => void;
 
-export function SettingsPage() {
-  const [tab, setTab] = useState<TabId>("keys");
+export function SettingsPage({
+  initialTab = "keys",
+  onOpenSoundCheck,
+}: {
+  initialTab?: SettingsTab;
+  onOpenSoundCheck: () => void;
+}) {
+  const [tab, setTab] = useState<SettingsTab>(initialTab);
   const { settings, update, saved } = usePersistedSettings();
 
   return (
@@ -61,7 +67,9 @@ export function SettingsPage() {
           <InterviewerTab settings={settings} update={update} />
         )}
         {settings && tab === "models" && <ModelsTab settings={settings} update={update} />}
-        {settings && tab === "audio" && <AudioTab settings={settings} update={update} />}
+        {settings && tab === "audio" && (
+          <AudioTab settings={settings} update={update} onOpenSoundCheck={onOpenSoundCheck} />
+        )}
         {settings && tab === "sync" && <SyncTab settings={settings} update={update} />}
       </div>
     </section>

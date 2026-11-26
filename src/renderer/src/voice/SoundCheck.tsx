@@ -5,6 +5,9 @@ import { capitalize, formatUsd } from "../text";
 import { RunningTime, Transcript } from "./SessionPanel";
 import { useVoiceSession, type VoiceStatus } from "./useVoiceSession";
 
+/** Roughly how long the scripted warm-up below takes. */
+export const SOUND_CHECK_MINUTES = 2;
+
 const TASK =
   "This is a short sound check. Greet the candidate in one sentence, then ask two easy warm-up " +
   "questions, one at a time (for example about their current role). After the second answer, " +
@@ -25,7 +28,7 @@ const ENDED_BY = {
   you: "You ended the session.",
 } as const;
 
-export function SoundCheck() {
+export function SoundCheck({ onBack }: { onBack: () => void }) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [spend, setSpend] = useState<MonthSpend | null>(null);
   const session = useVoiceSession(settings?.audio ?? null);
@@ -51,6 +54,11 @@ export function SoundCheck() {
       <header className="page-header">
         <h1 className="page-title">Sound check</h1>
         {stamp && <span className={`stamp ${stamp.tone}`}>{stamp.label}</span>}
+        {!running && !busy && (
+          <button type="button" className="link" onClick={onBack}>
+            Audio settings
+          </button>
+        )}
       </header>
 
       <p className="lede">
