@@ -1,6 +1,14 @@
+export interface Recordings {
+  /** Your mic and the interviewer, for playback. */
+  mixed: ArrayBuffer;
+  /** Your mic only, for the pronunciation review (no interviewer bleed). */
+  mic: ArrayBuffer | null;
+}
+
 /**
- * Records the candidate's mic and the interviewer's voice mixed into one Opus/WebM track.
- * The interviewer stream arrives asynchronously, so it joins the mix when it lands.
+ * Records the candidate's mic and the interviewer's voice mixed into one Opus/WebM track,
+ * plus the mic alone. The interviewer stream arrives asynchronously, so it joins the mix
+ * when it lands.
  */
 export function startRecorder(mic: MediaStream, interviewer: Promise<MediaStream>) {
   const context = new AudioContext();
@@ -10,8 +18,21 @@ export function startRecorder(mic: MediaStream, interviewer: Promise<MediaStream
     if (context.state !== "closed") context.createMediaStreamSource(stream).connect(mix);
   });
 
+  const mixed = record(mix.stream);
+  const micOnly = record(mic);
+
+  return {
+    async stop(): Promise<Recordings | null> {
+      const [mixedAudio, micAudio] = await Promise.all([mixed.stop(), micOnly.stop()]);
+      await context.close();
+      return mixedAudio ? { mixed: mixedAudio, mic: micAudio } : null;
+    },
+  };
+}
+
+function record(stream: MediaStream) {
   const chunks: Blob[] = [];
-  const recorder = new MediaRecorder(mix.stream, { mimeType: "audio/webm;codecs=opus" });
+  const recorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
   recorder.addEventListener("dataavailable", (e) => {
     if (e.data.size > 0) chunks.push(e.data);
   });
@@ -26,7 +47,6 @@ export function startRecorder(mic: MediaStream, interviewer: Promise<MediaStream
         recorder.stop();
         await stopped;
       }
-      await context.close();
       if (chunks.length === 0) return null;
       return new Blob(chunks, { type: "audio/webm" }).arrayBuffer();
     },

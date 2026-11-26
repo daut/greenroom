@@ -102,6 +102,8 @@ export interface VoiceRun {
   lines: { speaker: "you" | "interviewer"; text: string; startMs: number; endMs: number | null }[];
   costUsd: number;
   recordingPath: string | null;
+  /** Your mic alone, same clock as `recordingPath`; older runs don't have it. */
+  micRecordingPath?: string | null;
   /** Transcript time at which the recording starts. */
   recordingOffsetMs?: number;
 }

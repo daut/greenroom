@@ -1,3 +1,4 @@
+import { markWords, type PronunciationReview } from "@shared/pronunciation";
 import type { VoiceRun } from "@shared/training";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { clock } from "../voice/SessionPanel";
@@ -8,8 +9,21 @@ export interface Cue {
   n: number;
 }
 
-/** Plays a run's recording with the transcript following along; click a line to jump to it. */
-export function Replay({ run, cue = null }: { run: VoiceRun; cue?: Cue | null }) {
+type Mark = PronunciationReview["words"][number];
+
+/**
+ * Plays a run's recording with the transcript following along; click a line to jump to it.
+ * Words the pronunciation review flagged are underlined.
+ */
+export function Replay({
+  run,
+  cue = null,
+  marks = [],
+}: {
+  run: VoiceRun;
+  cue?: Cue | null;
+  marks?: Mark[];
+}) {
   const [url, setUrl] = useState<string | null>(null);
   const [missing, setMissing] = useState(false);
   const [nowMs, setNowMs] = useState(-1);
@@ -130,12 +144,42 @@ export function Replay({ run, cue = null }: { run: VoiceRun; cue?: Cue | null })
             >
               {line.speaker === "you" ? "You" : "Interviewer"} {clock(line.startMs)}
             </button>
-            <span className="script-text">{line.text}</span>
+            <span className="script-text">
+              <MarkedText
+                text={line.text}
+                marks={marks.filter((m) => m.line === i)}
+                onPlay={url ? () => seekTo(line.startMs - offset) : undefined}
+              />
+            </span>
           </li>
         ))}
       </ol>
     </div>
   );
+}
+
+function MarkedText({ text, marks, onPlay }: { text: string; marks: Mark[]; onPlay?: () => void }) {
+  if (marks.length === 0) return text;
+  return markWords(
+    text,
+    marks.map((m) => m.word),
+  ).map((part, i) => {
+    const mark = part.word && marks.find((m) => m.word === part.word);
+    if (!mark) return part.text;
+    return (
+      <button
+        // biome-ignore lint/suspicious/noArrayIndexKey: parts of a fixed line of text
+        key={i}
+        type="button"
+        className="unclear-word"
+        disabled={!onPlay}
+        onClick={onPlay}
+        title={`Sounded like "${mark.heard}". Say: ${mark.target}`}
+      >
+        {part.text}
+      </button>
+    );
+  });
 }
 
 function activeLine(run: VoiceRun, nowMs: number): number {

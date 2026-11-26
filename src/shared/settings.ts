@@ -89,6 +89,8 @@ const settingsSchema = z.object({
     mock: z.string().min(1).catch("gpt-realtime-2.1"),
     generate: z.string().min(1).catch("claude-haiku-5-5"),
     score: z.string().min(1).catch("claude-sonnet-5-5"),
+    /** OpenAI audio-input model for the pronunciation review (Chat Completions). */
+    pronunciation: z.string().min(1).catch("gpt-audio-1.5"),
   }),
   text: section({
     provider: z.enum(TEXT_PROVIDERS).catch("anthropic"),
@@ -107,6 +109,8 @@ const settingsSchema = z.object({
     inputDeviceId: z.string().catch("default"),
     outputDeviceId: z.string().catch("default"),
     recordSessions: z.boolean().catch(true),
+    /** Scoring sends your recorded turns to an audio model for understandability. */
+    pronunciationReview: z.boolean().catch(true),
   }),
 });
 

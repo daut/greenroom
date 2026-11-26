@@ -15,6 +15,8 @@ export interface VoiceSessionState {
   elapsedMs: number;
   maxMinutes: number | null;
   recordingPath: string | null;
+  /** Mic-only copy of the recording, for the pronunciation review. */
+  micRecordingPath: string | null;
   error: string | null;
   endedBy: EndReason | null;
   /** When the recording started, on the transcript's clock. */
@@ -35,6 +37,7 @@ const INITIAL: VoiceSessionState = {
   elapsedMs: 0,
   maxMinutes: null,
   recordingPath: null,
+  micRecordingPath: null,
   error: null,
   endedBy: null,
   recordingOffsetMs: 0,
@@ -53,8 +56,13 @@ export function useVoiceSession(audio: Settings["audio"] | null) {
     if (!session) return;
     live.current = null;
     setState((s) => ({ ...s, status: "ending", endedBy: reason }));
-    const recordingPath = await session.close();
-    setState((s) => ({ ...s, status: s.error ? "failed" : "ended", recordingPath }));
+    const { recordingPath, micRecordingPath } = await session.close();
+    setState((s) => ({
+      ...s,
+      status: s.error ? "failed" : "ended",
+      recordingPath,
+      micRecordingPath,
+    }));
   }, []);
 
   const start = useCallback(
@@ -96,9 +104,14 @@ export interface StartOptions {
   record?: boolean;
 }
 
+interface SavedRecordings {
+  recordingPath: string | null;
+  micRecordingPath: string | null;
+}
+
 interface LiveSession {
   maxMinutes: number;
-  close(): Promise<string | null>;
+  close(): Promise<SavedRecordings>;
   handOff(message: string): void;
 }
 
@@ -262,7 +275,7 @@ async function openSession({
     });
   }
 
-  let closed: Promise<string | null> | null = null;
+  let closed: Promise<SavedRecordings> | null = null;
   return {
     maxMinutes: call.maxMinutes,
     handOff(message: string) {
@@ -300,7 +313,14 @@ async function openSession({
         speaker.srcObject = null;
         await window.greenroom.voice.recordSpend(transcript.costUsd);
         await window.greenroom.voice.saveEventLog(eventLog.join("\n"));
-        return recording ? window.greenroom.voice.saveRecording(recording) : null;
+        return {
+          recordingPath: recording
+            ? await window.greenroom.voice.saveRecording(recording.mixed)
+            : null,
+          micRecordingPath: recording?.mic
+            ? await window.greenroom.voice.saveRecording(recording.mic, "mic")
+            : null,
+        };
       })();
       return closed;
     },

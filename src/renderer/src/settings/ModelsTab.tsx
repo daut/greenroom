@@ -1,4 +1,5 @@
 import { estimateSessionCostUsd } from "@shared/billing";
+import { AUDIO_REVIEW_MODEL_SUGGESTIONS } from "@shared/pronunciation";
 import { REALTIME_MODEL_SUGGESTIONS, type Settings } from "@shared/settings";
 import { TEXT_PROVIDER_INFO } from "@shared/text";
 import { Field, NumberInput, SuggestInput, Toggle } from "../components/fields";
@@ -12,16 +13,24 @@ type LimitKey = keyof Settings["limits"];
 /** The longest session the bars can show; matches the mock limit's maximum. */
 const BAR_SCALE_MINUTES = 180;
 
-const MODEL_FIELDS: { key: ModelKey; label: string; hint: string; voice: boolean }[] = [
-  { key: "drill", label: "Drill voice model", hint: "Single-question practice", voice: true },
-  { key: "mock", label: "Mock voice model", hint: "Full interview", voice: true },
+type ModelKind = "voice" | "text" | "audio";
+
+const MODEL_FIELDS: { key: ModelKey; label: string; hint: string; kind: ModelKind }[] = [
+  { key: "drill", label: "Drill voice model", hint: "Single-question practice", kind: "voice" },
+  { key: "mock", label: "Mock voice model", hint: "Full interview", kind: "voice" },
   {
     key: "generate",
     label: "Generation model",
     hint: "Question banks and card feedback",
-    voice: false,
+    kind: "text",
   },
-  { key: "score", label: "Scoring model", hint: "The report after a session", voice: false },
+  { key: "score", label: "Scoring model", hint: "The report after a session", kind: "text" },
+  {
+    key: "pronunciation",
+    label: "Pronunciation model",
+    hint: "OpenAI audio model that listens to your answers",
+    kind: "audio",
+  },
 ];
 
 export function ModelsTab({ settings, update }: { settings: Settings; update: UpdateSettings }) {
@@ -86,9 +95,11 @@ export function ModelsTab({ settings, update }: { settings: Settings; update: Up
                   id={id}
                   value={settings.models[f.key]}
                   suggestions={
-                    f.voice
+                    f.kind === "voice"
                       ? REALTIME_MODEL_SUGGESTIONS
-                      : TEXT_PROVIDER_INFO[settings.text.provider].suggestions
+                      : f.kind === "audio"
+                        ? AUDIO_REVIEW_MODEL_SUGGESTIONS
+                        : TEXT_PROVIDER_INFO[settings.text.provider].suggestions
                   }
                   onChange={(v) => setModel(f.key, v)}
                 />

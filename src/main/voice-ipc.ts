@@ -1,7 +1,15 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { IPC, type MonthSpend, type VoiceCall, type VoiceCallRequest } from "@shared/api";
+import {
+  IPC,
+  type MonthSpend,
+  type PronunciationRequest,
+  type PronunciationResult,
+  type VoiceCall,
+  type VoiceCallRequest,
+} from "@shared/api";
 import { interviewerInstructions } from "@shared/interviewer";
+import { reviewCostUsd } from "@shared/pronunciation";
 import { buildRealtimeSession } from "@shared/realtime";
 import { activePersona } from "@shared/settings";
 import { ipcMain, shell, systemPreferences } from "electron";
@@ -9,6 +17,7 @@ import type { KeyStore } from "./key-store";
 import { createRealtimeCall } from "./realtime-call";
 import type { SettingsStore } from "./settings-store";
 import type { SpendLedger } from "./spend-ledger";
+import { reviewAudioWithOpenAI } from "./text/openai-audio";
 
 interface Deps {
   settingsStore: SettingsStore;
@@ -62,8 +71,29 @@ export function registerVoiceIpc({ settingsStore, keyStore, ledger, recordingsDi
 
   ipcMain.handle(IPC.voiceMonthSpend, () => monthSpend());
 
-  ipcMain.handle(IPC.voiceSaveRecording, (_e, audio: ArrayBuffer) =>
-    saveSessionFile(recordingsDir, "webm", Buffer.from(audio)),
+  ipcMain.handle(IPC.voiceSaveRecording, (_e, audio: ArrayBuffer, variant: unknown) =>
+    saveSessionFile(recordingsDir, variant === "mic" ? "mic.webm" : "webm", Buffer.from(audio)),
+  );
+
+  ipcMain.handle(
+    IPC.voiceReviewPronunciation,
+    async (_e, request: PronunciationRequest): Promise<PronunciationResult> => {
+      assertWithinBudget(monthSpend());
+      const apiKey = keyStore.get("openai");
+      if (!apiKey) throw new Error("No OpenAI key set. Add one in Settings → Keys.");
+      const model = settingsStore.load().models.pronunciation;
+      const { reply, usage } = await reviewAudioWithOpenAI({
+        model,
+        apiKey,
+        system: String(request.system),
+        prompt: String(request.prompt),
+        schema: request.schema,
+        clips: validClips(request.clips),
+      });
+      const costUsd = reviewCostUsd(model, usage);
+      ledger.record(costUsd);
+      return { reply, costUsd };
+    },
   );
 
   ipcMain.handle(IPC.voiceSaveEventLog, (_e, jsonl: unknown) =>
@@ -87,6 +117,18 @@ function saveSessionFile(dir: string, extension: string, content: Buffer | strin
   const path = join(dir, `${new Date().toISOString().replace(/[:.]/g, "-")}.${extension}`);
   writeFileSync(path, content);
   return path;
+}
+
+function validClips(clips: unknown): { label: string; wav: Uint8Array }[] {
+  if (!Array.isArray(clips) || clips.length === 0) throw new Error("No audio clips to review.");
+  return clips.map((c: { label?: unknown; wav?: unknown }) => {
+    const { label, wav } = c ?? {};
+    if (typeof label !== "string") throw new Error("Invalid audio clip.");
+    if (wav instanceof ArrayBuffer) return { label, wav: new Uint8Array(wav) };
+    if (ArrayBuffer.isView(wav))
+      return { label, wav: new Uint8Array(wav.buffer, wav.byteOffset, wav.byteLength) };
+    throw new Error("Invalid audio clip.");
+  });
 }
 
 function assertWithinBudget({ spentUsd, budgetUsd }: MonthSpend) {

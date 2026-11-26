@@ -64,6 +64,7 @@ export function VoicePhaseView({
       lines: lines.map(({ speaker, text, startMs, endMs }) => ({ speaker, text, startMs, endMs })),
       costUsd: voice.transcript.costUsd,
       recordingPath: voice.recordingPath,
+      micRecordingPath: voice.micRecordingPath,
       recordingOffsetMs: voice.recordingOffsetMs,
     };
     update((s) => {

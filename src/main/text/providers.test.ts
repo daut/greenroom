@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { completeWithAnthropic } from "./anthropic";
 import { completeWithClaudeCode, findClaudeBinary, type Run } from "./claude-code";
 import { completeWithOpenAI } from "./openai";
+import { reviewAudioWithOpenAI } from "./openai-audio";
 
 const schema = { type: "object", properties: { n: { type: "number" } }, required: ["n"] };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
@@ -89,6 +90,62 @@ describe("completeWithOpenAI", () => {
     expect(out).toEqual({ n: 2 });
     const body = JSON.parse(String(fetch.mock.calls[0]?.[1]?.body));
     expect(body.text.format).toMatchObject({ type: "json_schema", schema });
+  });
+});
+
+describe("reviewAudioWithOpenAI", () => {
+  const clips = [{ label: "Clip #2", wav: new Uint8Array([1, 2, 3]) }];
+
+  it("sends labelled wav clips to Chat Completions and returns the forced tool call", async () => {
+    const fetch = vi.fn(async (_u: string, _i: RequestInit) =>
+      json({
+        choices: [
+          {
+            message: {
+              tool_calls: [
+                { type: "function", function: { name: "respond", arguments: '{"n":4}' } },
+              ],
+            },
+          },
+        ],
+        usage: {
+          prompt_tokens: 120,
+          completion_tokens: 30,
+          prompt_tokens_details: { audio_tokens: 100 },
+        },
+      }),
+    );
+
+    const out = await reviewAudioWithOpenAI(
+      { model: "gpt-audio-1.5", system: "S", prompt: "P", apiKey: "k", schema, clips },
+      fetch,
+    );
+
+    expect(out.reply).toEqual({ n: 4 });
+    expect(out.usage.prompt_tokens_details?.audio_tokens).toBe(100);
+    const [url, init] = fetch.mock.calls[0] ?? [];
+    expect(url).toBe("https://api.openai.com/v1/chat/completions");
+    const body = JSON.parse(String(init?.body));
+    expect(body).toMatchObject({ model: "gpt-audio-1.5", modalities: ["text"], store: false });
+    expect(body.messages[0]).toEqual({ role: "system", content: "S" });
+    expect(body.messages[1].content).toEqual([
+      { type: "text", text: "P" },
+      { type: "text", text: "Clip #2" },
+      { type: "input_audio", input_audio: { data: "AQID", format: "wav" } },
+    ]);
+    expect(body.tools[0].function).toMatchObject({ name: "respond", parameters: schema });
+    expect(body.tool_choice).toEqual({ type: "function", function: { name: "respond" } });
+  });
+
+  it("falls back to JSON in the message text, and explains API errors", async () => {
+    const text = vi.fn(async () => json({ choices: [{ message: { content: '{"n":1}' } }] }));
+    const failing = vi.fn(async () => json({ error: { message: "bad audio" } }, 400));
+    const request = { model: "m", system: "", prompt: "", apiKey: "k", schema, clips };
+
+    await expect(reviewAudioWithOpenAI(request, text)).resolves.toMatchObject({ reply: { n: 1 } });
+    await expect(reviewAudioWithOpenAI(request, failing)).rejects.toThrow(
+      "OpenAI error (400): bad audio",
+    );
   });
 });
 

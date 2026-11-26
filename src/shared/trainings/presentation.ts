@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { UNDERSTANDABILITY } from "../pronunciation";
 import type { RubricCriterion } from "../report";
 import {
   type FormArtifact,
@@ -38,6 +39,7 @@ const RUBRIC: RubricCriterion[] = [
     label: "Q&A",
     description: "Direct, honest, concise answers; handles tough or off-topic questions.",
   },
+  UNDERSTANDABILITY,
 ];
 
 const FRAME =

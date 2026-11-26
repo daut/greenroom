@@ -147,6 +147,65 @@ describe("buildReport", () => {
   });
 });
 
+describe("buildReport with an audio review", () => {
+  const withAudio: RubricCriterion[] = [
+    ...rubric,
+    { id: "clarity", label: "Understandability", description: "Easy to follow", fromAudio: true },
+  ];
+  const audio = {
+    ok: true as const,
+    costUsd: 0.03,
+    reply: {
+      understandability: 62,
+      summary: "Mostly clear.",
+      words: [
+        {
+          line: 2,
+          word: "mattered",
+          heard: "madded",
+          target: "MAT-terd",
+          tip: "Tap the t.",
+          severity: 3,
+          habit: "t said as d",
+          recurring: false,
+        },
+      ],
+    },
+  };
+
+  it("scores audio criteria from the review, not the scorer, and adds its findings", () => {
+    const report = buildReport(
+      run,
+      withAudio,
+      reply({
+        scores: [...reply().scores, { criterion: "clarity", score: 5, comment: "guessed" }],
+        focus: ["p1"],
+      }),
+      audio,
+    );
+
+    expect(report.scores.find((s) => s.criterion === "clarity")).toEqual({
+      criterion: "clarity",
+      score: 3,
+      comment: "Mostly clear.",
+    });
+    expect(report.overall).toBe(3);
+    expect(report.findings?.map((f) => f.id)).toEqual(["p1", "f1"]);
+    expect(report.focus).toEqual(["p1"]);
+    expect(report.pronunciation).toMatchObject({ understandability: 62, costUsd: 0.03 });
+    expect(report.pronunciation?.words).toEqual([
+      { line: 1, word: "mattered", heard: "madded", target: "MAT-terd" },
+    ]);
+  });
+
+  it("leaves audio criteria unscored and says why when there is no review", () => {
+    const report = buildReport(run, withAudio, reply(), { ok: false, reason: "No recording." });
+
+    expect(report.scores.map((s) => s.criterion)).toEqual(["structure", "impact"]);
+    expect(report.pronunciationSkipped).toBe("No recording.");
+  });
+});
+
 describe("scoringPrompt", () => {
   const phase: ReportPhase = {
     kind: "report",
@@ -170,6 +229,36 @@ describe("scoringPrompt", () => {
     expect(prompt).toContain("up to 4");
     expect(prompt).toContain("#2 [0:02] Candidate: Because um it mattered");
     expect(prompt).not.toContain("Known habits");
+  });
+
+  it("leaves audio criteria to the review and shares its findings with the scorer", () => {
+    const audioPhase: ReportPhase = {
+      ...phase,
+      rubric: [
+        ...rubric,
+        { id: "clarity", label: "Clarity", description: "Heard", fromAudio: true },
+      ],
+    };
+    const prompt = scoringPrompt(audioPhase, ctx, run, [], {
+      understandability: 70,
+      summary: "Some slips.",
+      words: [
+        {
+          line: 2,
+          word: "mattered",
+          heard: "madded",
+          target: "MAT-terd",
+          tip: "Tap the t.",
+          severity: 2,
+          habit: "t said as d",
+          recurring: false,
+        },
+      ],
+    });
+
+    expect(prompt).not.toContain("- clarity (Clarity)");
+    expect(prompt).toContain("70/100");
+    expect(prompt).toContain('[p1] line #2 "mattered" sounded like "madded"');
   });
 
   it("asks for a review of the learner's known habits by their exact labels", () => {

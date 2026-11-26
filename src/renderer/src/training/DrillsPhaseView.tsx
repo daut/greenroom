@@ -1,4 +1,5 @@
 import {
+  canTypeDrill,
   coachPhase,
   type DrillEntry,
   type DrillTarget,
@@ -208,25 +209,27 @@ function TargetPanel({
         {target.earlier && <p className="hint">Carried over from an earlier session.</p>}
       </div>
 
-      <div className="stack tight">
-        <h3 className="label">Typed reps</h3>
-        {current && !current.result ? (
-          <TypedRound
-            key={current.id}
-            drill={current}
-            checking={busy === "checking"}
-            onSave={(answers) => patch(current.id, { answers })}
-            onCheck={(answers) => check(current, answers)}
-          />
-        ) : (
-          <>
-            {current && <TypedRound key={current.id} drill={current} checking={false} />}
-            <button type="button" className="btn" disabled={busy !== null} onClick={write}>
-              {busy === "writing" ? "Writing" : current ? "Another round" : "Write 5 reps"}
-            </button>
-          </>
-        )}
-      </div>
+      {canTypeDrill(target) && (
+        <div className="stack tight">
+          <h3 className="label">Typed reps</h3>
+          {current && !current.result ? (
+            <TypedRound
+              key={current.id}
+              drill={current}
+              checking={busy === "checking"}
+              onSave={(answers) => patch(current.id, { answers })}
+              onCheck={(answers) => check(current, answers)}
+            />
+          ) : (
+            <>
+              {current && <TypedRound key={current.id} drill={current} checking={false} />}
+              <button type="button" className="btn" disabled={busy !== null} onClick={write}>
+                {busy === "writing" ? "Writing" : current ? "Another round" : "Write 5 reps"}
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="stack tight">
         <h3 className="label">Say it</h3>

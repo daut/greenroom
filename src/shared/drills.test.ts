@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canTypeDrill,
   type DrillTarget,
   drillPassed,
   drillTargets,
@@ -188,5 +189,15 @@ describe("drill prompts", () => {
 
     expect(prompt).toContain("Candidate: What would it look like?");
     expect(prompt).toContain("how … like in questions");
+  });
+});
+
+describe("pronunciation targets", () => {
+  const sound: DrillTarget = { ...target, kind: "pronunciation", habit: "th said as t" };
+
+  it("are practised out loud only, with the sound itself in focus", () => {
+    expect(canTypeDrill(sound)).toBe(false);
+    expect(canTypeDrill(target)).toBe(true);
+    expect(spokenDrillTask("", sound)).toContain("say the word alone");
   });
 });

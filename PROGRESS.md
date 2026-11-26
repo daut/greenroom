@@ -142,6 +142,16 @@ Handover notes for the next agent: see README "Development" and "Adding a traini
 - [x] v0.1.1 released (sign-in fixes, link import, end_session prompt). Workflow pushed the cask to the tap itself; `brew audit --cask --strict --online` passes; `brew upgrade` to 0.1.1 tested and link import works in the installed app
 - [x] Cask now requires macOS Ventura (online audit: Electron's minimum); caveat no longer promises Developer ID signing
 
+### Pronunciation & understandability
+- [x] Mic-only recording (`*.mic.webm`) next to the mixed one, `VoiceRun.micRecordingPath`; synced + relinked like the mix
+- [x] Your turns cut from the mic recording (`src/shared/clips.ts`, TDD) → 16 kHz mono wav, longest first, ≤ 45 s each, ≤ 5 min total; older runs fall back to the mix
+- [x] Audio review (`src/shared/pronunciation.ts`, TDD; `main/text/openai-audio.ts`): `gpt-audio-1.5` via Chat Completions, forced tool call; understandability 0–100 with anchored bands + up to 5 flagged words → `pronunciation` findings (Hear it / Discuss / Drill this / habits)
+- [x] `fromAudio` rubric criteria: Understandability (interview, presentation), Pronunciation (English), scored from the review band, not by the scorer; review summary + findings go into the scoring prompt; skipped → criterion "Not scored" with the reason
+- [x] Cost from usage into the spend ledger (blocked at 100% budget); estimate shown above Score it
+- [x] UI: Understandability metric, Replay underlines flagged words (click plays the line), History trend via the criterion, Settings → Audio toggle (on) + Models → Pronunciation model; pronunciation targets are spoken-reps only
+- [!] Untested live: audio request shape, real cost per minute (estimate assumes 10 audio tokens/s), WebM decode of the mic file
+- Decision: no transcription logprobs (only on `gpt-4o-*-transcribe`, shut down Feb 2027; `gpt-transcribe` doesn't document them)
+
 ### Waiting on the user
 - [!] Live voice drill / mock / presentation with an OpenAI key (also confirms the self-hang-up fix)
 - [!] Verify audio on Linux (PipeWire + PulseAudio)
@@ -149,9 +159,12 @@ Handover notes for the next agent: see README "Development" and "Adding a traini
 ### Todo
 - [x] Tap update automated: `TAP_DEPLOY_KEY` secret = write deploy key on `daut/homebrew-tap` only
 - [ ] macOS packaged-app mic prompt check (TCC) once a key is in
+- [ ] Logo / wordmark (beyond the app icon) for README, releases, tap
 - [x] Min-window Drill: cost + Start moved above the question list under 640px
 
 ## Log
+
+- 2026-11-26: Logo added to todo. Pronunciation/understandability scoring built: audio-model review of mic-only clips feeds a new rubric criterion and findings (logprobs ruled out, deprecated models only). Untested live.
 
 - 2026-11-26: Feedback made actionable: structured findings with rules and recording links, coach discussion (text + voice), Practice phase with typed and spoken reps, habits carried across sessions.
 

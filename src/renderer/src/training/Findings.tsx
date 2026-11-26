@@ -5,6 +5,7 @@ const KIND_LABEL: Record<Finding["kind"], string> = {
   correction: "Correction",
   habit: "Habit",
   content: "Content",
+  pronunciation: "Pronunciation",
 };
 
 export interface FindingActions {

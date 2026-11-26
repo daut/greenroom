@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { UNDERSTANDABILITY } from "../pronunciation";
 import type { RubricCriterion } from "../report";
 import {
   type Card,
@@ -51,6 +52,7 @@ const RUBRIC: RubricCriterion[] = [
     label: "Delivery",
     description: "Clear, confident, concise spoken delivery; few fillers; sensible answer length.",
   },
+  UNDERSTANDABILITY,
 ];
 
 const FINDINGS_GUIDANCE = `What to look for:

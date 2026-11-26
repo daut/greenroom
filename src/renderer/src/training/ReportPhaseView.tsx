@@ -1,5 +1,6 @@
 import { coachBriefing, coachSystem } from "@shared/coach";
 import { knownHabits } from "@shared/habits";
+import type { AudioReview } from "@shared/pronunciation";
 import {
   buildReport,
   type ChatTurn,
@@ -9,7 +10,9 @@ import {
   type ReportArtifact,
   scoringPrompt,
   scoringSchema,
+  wantsAudioReview,
 } from "@shared/report";
+import type { Settings } from "@shared/settings";
 import {
   completePhase,
   contextOf,
@@ -21,10 +24,11 @@ import {
   type VoiceRun,
 } from "@shared/training";
 import { useEffect, useState } from "react";
-import { dateTime, errorMessage } from "../text";
+import { dateTime, errorMessage, formatUsd } from "../text";
 import { askStructured } from "./ask";
 import { CoachPanel } from "./CoachPanel";
 import { type FindingActions, FindingList } from "./Findings";
+import { pronunciationEstimateUsd, reviewPronunciation } from "./pronunciation";
 import { type Cue, Replay } from "./Replay";
 import { useAllSessions } from "./useAllSessions";
 import type { UpdateSession } from "./useTrainingSession";
@@ -48,24 +52,50 @@ export function ReportPhaseView({
   ].reverse();
   const reports = (session.artifacts[phase.id] as ReportArtifact | undefined) ?? {};
   const allSessions = useAllSessions();
+  const [settings, setSettings] = useState<Settings | null>(null);
   const [open, setOpen] = useState<string | null>(runs[0]?.at ?? null);
   const [scoring, setScoring] = useState<string | null>(null);
+  const [listening, setListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const reviewsAudio = wantsAudioReview(phase.rubric);
+
+  useEffect(() => {
+    window.greenroom.settings.get().then(setSettings);
+  }, []);
 
   const habitsBefore = (run: VoiceRun) =>
     knownHabits(withCurrent(allSessions ?? [], session), def, { before: run.at });
+
+  const audioReview = async (run: VoiceRun): Promise<AudioReview | undefined> => {
+    if (!reviewsAudio) return undefined;
+    if (!settings?.audio.pronunciationReview)
+      return { ok: false, reason: "The pronunciation review is off (Settings → Audio)." };
+    setListening(true);
+    try {
+      return await reviewPronunciation(run, def.title);
+    } finally {
+      setListening(false);
+    }
+  };
 
   const score = async (run: VoiceRun) => {
     setScoring(run.at);
     setError(null);
     try {
+      const audio = await audioReview(run);
       const reply = await askStructured(
         "score",
         phase.system,
-        scoringPrompt(phase, contextOf(session), run, habitsBefore(run)),
+        scoringPrompt(
+          phase,
+          contextOf(session),
+          run,
+          habitsBefore(run),
+          audio?.ok ? audio.reply : undefined,
+        ),
         scoringSchema,
       );
-      const report = buildReport(run, phase.rubric, reply);
+      const report = buildReport(run, phase.rubric, reply, audio);
       update((s) => {
         const current = (s.artifacts[phase.id] as ReportArtifact | undefined) ?? {};
         const discussion = current[run.at]?.discussion;
@@ -113,10 +143,10 @@ export function ReportPhaseView({
                   <button
                     type="button"
                     className="btn primary"
-                    disabled={scoring !== null || allSessions === null}
+                    disabled={scoring !== null || allSessions === null || settings === null}
                     onClick={() => score(run)}
                   >
-                    {scoring === run.at ? "Scoring" : "Score it"}
+                    {scoring !== run.at ? "Score it" : listening ? "Listening" : "Scoring"}
                   </button>
                 )}
               </div>
@@ -125,6 +155,11 @@ export function ReportPhaseView({
                   phase={phase}
                   run={run}
                   report={report}
+                  reviewEstimate={
+                    reviewsAudio && settings?.audio.pronunciationReview
+                      ? pronunciationEstimateUsd(run, settings.models.pronunciation)
+                      : null
+                  }
                   scoring={allSessions === null ? "loading" : scoring}
                   onScore={() => score(run)}
                   onDrill={onDrill}
@@ -166,6 +201,7 @@ function OpenRun({
   phase,
   run,
   report,
+  reviewEstimate,
   scoring,
   onScore,
   onDrill,
@@ -175,6 +211,8 @@ function OpenRun({
   phase: ReportPhase;
   run: VoiceRun;
   report: Report | undefined;
+  /** Cost of the pronunciation review that scoring would run, when it would. */
+  reviewEstimate: number | null;
   scoring: string | null;
   onScore: () => void;
   onDrill: ((habit: string) => void) | null;
@@ -201,6 +239,12 @@ function OpenRun({
 
   return (
     <div className="card-editor stack">
+      {reviewEstimate !== null && (
+        <p className="hint">
+          Scoring{report ? " again" : ""} includes a pronunciation review of your recorded answers,
+          about {formatUsd(reviewEstimate)}. Turn it off in Settings → Audio.
+        </p>
+      )}
       {report && (
         <ReportBody
           phase={phase}
@@ -245,7 +289,7 @@ function OpenRun({
           onClose={() => setCoachOpen(false)}
         />
       )}
-      <Replay run={run} cue={cue} />
+      <Replay run={run} cue={cue} marks={report?.pronunciation?.words} />
     </div>
   );
 }
@@ -333,7 +377,17 @@ function ReportBody({
           value={`${m.answers}`}
           hint={`avg ${Math.round(m.averageAnswerSeconds)} s, longest ${Math.round(m.longestAnswerSeconds)} s`}
         />
+        {report.pronunciation && (
+          <Metric
+            label="Understandability"
+            value={`${report.pronunciation.understandability} / 100`}
+            hint={`from the recording; ${report.pronunciation.words.length} unclear word${report.pronunciation.words.length === 1 ? "" : "s"}`}
+          />
+        )}
       </dl>
+      {report.pronunciationSkipped && (
+        <p className="hint">Pronunciation not reviewed: {report.pronunciationSkipped}</p>
+      )}
     </div>
   );
 }

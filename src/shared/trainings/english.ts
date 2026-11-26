@@ -30,6 +30,13 @@ const RUBRIC: RubricCriterion[] = [
     label: "Coherence",
     description: "Ideas are linked clearly with appropriate connectors.",
   },
+  {
+    id: "pronunciation",
+    label: "Pronunciation",
+    description:
+      "Sounds, word stress and endings are clear enough that a listener never has to guess. Scored from the recording.",
+    fromAudio: true,
+  },
 ];
 
 export const englishTraining: TrainingDefinition = {

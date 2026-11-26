@@ -93,18 +93,24 @@ async function syncRecordings(sessions: TrainingSession[], remote: SyncRemote, d
   return { recordingsUp, recordingsDown };
 }
 
+/** Fields of a voice run that point at files in the recordings folder. */
+const RECORDING_FIELDS = ["recordingPath", "micRecordingPath"] as const;
+type RunFiles = Partial<Record<(typeof RECORDING_FIELDS)[number], string | null>>;
+
 /** Recording paths point at this machine's recordings folder after download. */
 function relinkRecordings(session: TrainingSession, dir: string): TrainingSession {
+  const relink = (run: RunFiles) => {
+    const next = { ...run };
+    for (const field of RECORDING_FIELDS) {
+      const path = run[field];
+      if (path) next[field] = join(dir, basename(path));
+    }
+    return next;
+  };
   const artifacts = Object.fromEntries(
     Object.entries(session.artifacts).map(([key, value]) => [
       key,
-      Array.isArray(value)
-        ? value.map((item) =>
-            isRun(item) && item.recordingPath
-              ? { ...item, recordingPath: join(dir, basename(item.recordingPath)) }
-              : item,
-          )
-        : value,
+      Array.isArray(value) ? value.map((item) => (isRun(item) ? relink(item) : item)) : value,
     ]),
   );
   return { ...session, artifacts };
@@ -114,13 +120,15 @@ function recordingPaths(sessions: TrainingSession[]): string[] {
   return sessions.flatMap((s) =>
     Object.values(s.artifacts).flatMap((value) =>
       Array.isArray(value)
-        ? value.filter(isRun).flatMap((r) => (r.recordingPath ? [r.recordingPath] : []))
+        ? value
+            .filter(isRun)
+            .flatMap((r) => RECORDING_FIELDS.flatMap((field) => (r[field] ? [r[field]] : [])))
         : [],
     ),
   );
 }
 
-function isRun(value: unknown): value is { recordingPath: string | null } {
+function isRun(value: unknown): value is RunFiles {
   return typeof value === "object" && value !== null && "recordingPath" in value;
 }
 

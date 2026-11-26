@@ -83,6 +83,16 @@ export function AudioTab({
         checked={settings.audio.recordSessions}
         onChange={(recordSessions) => setAudio({ recordSessions })}
       />
+      <Toggle
+        label="Review pronunciation when scoring"
+        checked={settings.audio.pronunciationReview}
+        onChange={(pronunciationReview) => setAudio({ pronunciationReview })}
+      />
+      <p className="hint">
+        Sends up to 5 minutes of your recorded answers (your mic only) to OpenAI's audio model to
+        score how easy you are to understand and flag unclear words. Needs recording on and an
+        OpenAI key; costs a few cents per session.
+      </p>
 
       <SoundCheckLink settings={settings} onOpen={onOpenSoundCheck} />
     </div>

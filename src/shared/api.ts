@@ -30,6 +30,20 @@ export interface VoiceCall {
   maxMinutes: number;
 }
 
+export interface PronunciationRequest {
+  system: string;
+  prompt: string;
+  /** JSON schema of the reply. */
+  schema: Record<string, unknown>;
+  clips: { label: string; wav: ArrayBuffer }[];
+}
+
+export interface PronunciationResult {
+  /** Unvalidated; the renderer checks it against its schema. */
+  reply: unknown;
+  costUsd: number;
+}
+
 export interface SyncStatus {
   configured: boolean;
   signedIn: boolean;
@@ -77,7 +91,10 @@ export interface GreenroomApi {
     connect(request: VoiceCallRequest): Promise<VoiceCall>;
     recordSpend(usd: number): Promise<MonthSpend>;
     monthSpend(): Promise<MonthSpend>;
-    saveRecording(audio: ArrayBuffer): Promise<string>;
+    /** `variant` "mic" marks the mic-only copy in the file name. */
+    saveRecording(audio: ArrayBuffer, variant?: "mic"): Promise<string>;
+    /** Sends recorded clips to the audio model; spend goes on the monthly ledger. */
+    reviewPronunciation(request: PronunciationRequest): Promise<PronunciationResult>;
     /** Raw Realtime events of the last session as JSON lines, for debugging. */
     saveEventLog(jsonl: string): Promise<string>;
     revealRecording(path: string): Promise<void>;
@@ -135,6 +152,7 @@ export const IPC = {
   voiceSaveRecording: "voice:save-recording",
   voiceSaveEventLog: "voice:save-event-log",
   voiceRevealRecording: "voice:reveal-recording",
+  voiceReviewPronunciation: "voice:review-pronunciation",
   sessionsList: "sessions:list",
   sessionsGet: "sessions:get",
   sessionsSave: "sessions:save",
