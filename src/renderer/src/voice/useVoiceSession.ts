@@ -1,5 +1,6 @@
 import type { VoiceSessionKind } from "@shared/api";
-import type { Settings } from "@shared/settings";
+import { sharedScratchpad } from "@shared/interviewer";
+import type { PersonaOverride, Settings } from "@shared/settings";
 import { emptyTranscript, reduceEvent, type TranscriptState } from "@shared/transcript";
 import { nextWrapUpStep, type WrapUpDone, type WrapUpStep, wrapUpNote } from "@shared/wrap-up";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -92,7 +93,10 @@ export function useVoiceSession(audio: Settings["audio"] | null) {
   /** Ends a listen-first stretch: the voice replies normally again and responds to `message`. */
   const handOff = useCallback((message: string) => live.current?.handOff(message), []);
 
-  return { ...state, start, stop, handOff };
+  /** Shows the voice something the user wrote; it reads it on its next turn. */
+  const share = useCallback((text: string) => live.current?.share(text), []);
+
+  return { ...state, start, stop, handOff, share };
 }
 
 export interface StartOptions {
@@ -100,6 +104,7 @@ export interface StartOptions {
   listenFirst?: boolean;
   coach?: boolean;
   maxMinutes?: number;
+  persona?: PersonaOverride;
   /** Defaults to the Settings → Audio choice; coaching calls aren't kept. */
   record?: boolean;
 }
@@ -113,6 +118,7 @@ interface LiveSession {
   maxMinutes: number;
   close(): Promise<SavedRecordings>;
   handOff(message: string): void;
+  share(text: string): void;
 }
 
 interface OpenOptions extends StartOptions {
@@ -133,6 +139,7 @@ async function openSession({
   listenFirst,
   coach,
   maxMinutes,
+  persona,
   record = audio.recordSessions,
 }: OpenOptions): Promise<LiveSession> {
   const mic = await navigator.mediaDevices.getUserMedia({
@@ -216,6 +223,7 @@ async function openSession({
       listenFirst,
       coach,
       maxMinutes,
+      persona,
     });
   } catch (error) {
     stopTracks(mic);
@@ -300,6 +308,16 @@ async function openSession({
         item: { type: "message", role: "user", content: [{ type: "input_text", text: message }] },
       });
       send({ type: "response.create" });
+    },
+    share(text: string) {
+      send({
+        type: "conversation.item.create",
+        item: {
+          type: "message",
+          role: "user",
+          content: [{ type: "input_text", text: sharedScratchpad(text) }],
+        },
+      });
     },
     close() {
       closed ??= (async () => {

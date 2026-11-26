@@ -1,6 +1,6 @@
 import { type DrillEntry, drillPassed } from "./drills";
-import { type Finding, habitKey, type KnownHabit, type ReportArtifact } from "./report";
-import type { TrainingDefinition, TrainingSession } from "./training";
+import { type Finding, habitKey, type KnownHabit, sessionReports } from "./report";
+import { phasesOf, type TrainingDefinition, type TrainingSession } from "./training";
 
 export type HabitStatus = "open" | "improving" | "fixed";
 
@@ -57,7 +57,7 @@ export function trackHabits(
   };
 
   for (const session of sessions.filter((s) => s.trainingId === def.id)) {
-    for (const report of reportsOf(session, def)) {
+    for (const report of sessionReports(def, session)) {
       for (const finding of report.findings ?? []) {
         if (isWorthTracking(finding))
           add(finding.habit, { at: report.runAt, type: "seen", finding });
@@ -120,16 +120,8 @@ function isWorthTracking(finding: Finding): boolean {
   return finding.severity >= 2 || finding.recurring;
 }
 
-function reportsOf(session: TrainingSession, def: TrainingDefinition) {
-  return def.phases.flatMap((p) =>
-    p.kind === "report"
-      ? Object.values((session.artifacts[p.id] as ReportArtifact | undefined) ?? {})
-      : [],
-  );
-}
-
 function drillsOf(session: TrainingSession, def: TrainingDefinition): DrillEntry[] {
-  return def.phases.flatMap((p) =>
+  return phasesOf(def, session).flatMap((p) =>
     p.kind === "drills" ? ((session.artifacts[p.id] as DrillEntry[] | undefined) ?? []) : [],
   );
 }

@@ -1,7 +1,13 @@
 import { z } from "zod";
 import type { Habit } from "./habits";
 import { type Finding, formatTranscript, habitKey, type Report } from "./report";
-import type { ReportPhase, TrainingDefinition, VoiceRun } from "./training";
+import {
+  phasesOf,
+  type ReportPhase,
+  type TrainingDefinition,
+  type TrainingSession,
+  type VoiceRun,
+} from "./training";
 
 /** Something to practise: a finding from this session or a habit still open from before. */
 export interface DrillTarget {
@@ -97,8 +103,11 @@ export function canTypeDrill(target: DrillTarget): boolean {
 export const SPOKEN_DRILL_MINUTES = 3;
 
 /** The phase whose scorer coaches drills and discussions: the training's first report. */
-export function coachPhase(def: TrainingDefinition): ReportPhase | undefined {
-  return def.phases.find((p): p is ReportPhase => p.kind === "report");
+export function coachPhase(
+  def: TrainingDefinition,
+  session: TrainingSession,
+): ReportPhase | undefined {
+  return phasesOf(def, session).find((p): p is ReportPhase => p.kind === "report");
 }
 
 /** This session's findings (focus first, newest example per habit), then earlier open habits. */

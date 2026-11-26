@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import type { VoiceSessionKind } from "./api";
 import type { RubricCriterion } from "./report";
+import type { PersonaOverride } from "./settings";
 import type { TextRole } from "./text";
 
 /**
@@ -12,7 +13,10 @@ export interface TrainingDefinition {
   id: string;
   title: string;
   summary: string;
+  /** The phases of a fresh session, also listed on Home. */
   phases: Phase[];
+  /** The phases once the setup is known, e.g. one voice phase per picked round. */
+  phasesFor?: (ctx: PhaseContext) => Phase[];
   /** Session name once the inputs are known, e.g. "Staff engineer at Acme". */
   sessionTitle?: (ctx: PhaseContext) => string | undefined;
 }
@@ -30,8 +34,12 @@ interface PhaseBase {
 export interface FormField {
   id: string;
   label: string;
-  /** `document` is long text that can also be imported from a PDF/TXT/Markdown file. */
-  kind: "text" | "longtext" | "document";
+  /**
+   * `document` is long text that can also be imported from a PDF/TXT/Markdown file.
+   * `pick` ticks any of `options`; the answer is their ids, comma-separated.
+   */
+  kind: "text" | "longtext" | "document" | "pick";
+  options?: PickOption[];
   required?: boolean;
   placeholder?: string;
   hint?: string;
@@ -39,11 +47,25 @@ export interface FormField {
   carryHabits?: boolean;
 }
 
+export interface PickOption {
+  id: string;
+  label: string;
+  detail?: string;
+}
+
 export interface FormPhase extends PhaseBase {
   kind: "form";
   fields: FormField[];
 }
 export type FormArtifact = Record<string, string>;
+
+/** The ids ticked in a `pick` field. */
+export function pickedIds(value: string | undefined): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+}
 
 export interface GeneratePhase<T = unknown> extends PhaseBase {
   kind: "generate";
@@ -102,6 +124,12 @@ export interface VoicePhase extends PhaseBase {
   frame?: string;
   /** The voice only listens until you press the hand-over button (e.g. present, then Q&A). */
   listenFirst?: { button: string; message: string };
+  /** Overrides the active preset's manner for this phase, e.g. a tough system-design round. */
+  persona?: PersonaOverride;
+  /** Shorter than the Settings limit for this session kind. */
+  maxMinutes?: number;
+  /** A text pad next to the call (code, design notes); shared on demand and scored. */
+  scratchpad?: { label: string; placeholder: string };
 }
 export interface Choice {
   id: string;
@@ -123,6 +151,8 @@ export interface VoiceRun {
   micRecordingPath?: string | null;
   /** Transcript time at which the recording starts. */
   recordingOffsetMs?: number;
+  /** The scratchpad as it was when the call ended. */
+  scratchpad?: string;
 }
 export type VoiceArtifact = VoiceRun[];
 
@@ -188,13 +218,17 @@ export function newSession(def: TrainingDefinition, id: string, now = new Date()
   };
 }
 
+/** This session's phases: they can depend on its setup. */
+export function phasesOf(def: TrainingDefinition, session: TrainingSession): Phase[] {
+  return def.phasesFor?.(contextOf(session)) ?? def.phases;
+}
+
 export function phaseState(
   def: TrainingDefinition,
   session: TrainingSession,
   phaseId: string,
 ): PhaseState {
-  if (session.done.includes(phaseId)) return "done";
-  return dependencies(def, phaseId).every((d) => session.done.includes(d)) ? "ready" : "locked";
+  return stateIn(phasesOf(def, session), session, phaseId);
 }
 
 /** Stores the artifact and marks the phase done; phases built on it reopen (their work stays). */
@@ -205,9 +239,10 @@ export function completePhase(
   artifact: unknown,
   now = new Date(),
 ): TrainingSession {
-  const reopened = dependents(def, phaseId);
+  const saved = saveArtifact(session, phaseId, artifact, now);
+  const reopened = dependents(phasesOf(def, saved), phaseId);
   const done = session.done.filter((d) => !reopened.has(d) && d !== phaseId);
-  const next = saveArtifact({ ...session, done: [...done, phaseId] }, phaseId, artifact, now);
+  const next = { ...saved, done: [...done, phaseId] };
   const title = def.sessionTitle?.(contextOf(next));
   return title ? { ...next, title } : next;
 }
@@ -227,7 +262,8 @@ export function saveArtifact(
 }
 
 export function nextPhase(def: TrainingDefinition, session: TrainingSession): Phase | null {
-  return def.phases.find((p) => phaseState(def, session, p.id) === "ready") ?? null;
+  const phases = phasesOf(def, session);
+  return phases.find((p) => stateIn(phases, session, p.id) === "ready") ?? null;
 }
 
 export function isFinished(session: TrainingSession): boolean {
@@ -259,20 +295,25 @@ export function contextOf(session: TrainingSession): PhaseContext {
   return { artifact: <T>(id: string) => session.artifacts[id] as T | undefined };
 }
 
-function dependencies(def: TrainingDefinition, phaseId: string): string[] {
-  const index = def.phases.findIndex((p) => p.id === phaseId);
-  const phase = def.phases[index];
+function stateIn(phases: Phase[], session: TrainingSession, phaseId: string): PhaseState {
+  if (session.done.includes(phaseId)) return "done";
+  return dependencies(phases, phaseId).every((d) => session.done.includes(d)) ? "ready" : "locked";
+}
+
+function dependencies(phases: Phase[], phaseId: string): string[] {
+  const index = phases.findIndex((p) => p.id === phaseId);
+  const phase = phases[index];
   if (!phase) return [];
   if (phase.after) return phase.after;
-  const previous = def.phases[index - 1];
+  const previous = phases[index - 1];
   return previous ? [previous.id] : [];
 }
 
-function dependents(def: TrainingDefinition, phaseId: string): Set<string> {
+function dependents(phases: Phase[], phaseId: string): Set<string> {
   const found = new Set<string>();
   const visit = (id: string) => {
-    for (const p of def.phases) {
-      if (!found.has(p.id) && dependencies(def, p.id).includes(id)) {
+    for (const p of phases) {
+      if (!found.has(p.id) && dependencies(phases, p.id).includes(id)) {
         found.add(p.id);
         visit(p.id);
       }

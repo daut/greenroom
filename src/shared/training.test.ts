@@ -7,7 +7,9 @@ import {
   isFinished,
   newSession,
   nextPhase,
+  type Phase,
   phaseState,
+  phasesOf,
   reopenSession,
   saveArtifact,
   type TrainingDefinition,
@@ -124,6 +126,34 @@ describe("finishing a session", () => {
     const s = finishSession(newSession(def, "id1", T0), T0);
 
     expect(isFinished(completePhase(def, s, "setup", {}, T1))).toBe(true);
+  });
+});
+
+describe("phases that depend on the setup", () => {
+  const extra: Phase = { kind: "form", id: "extra", title: "Extra", fields: [] };
+  const growing: TrainingDefinition = {
+    ...def,
+    phasesFor: (ctx) =>
+      ctx.artifact<{ more?: string }>("setup")?.more ? [...def.phases, extra] : def.phases,
+  };
+
+  it("uses the static list until the setup asks for more", () => {
+    const s = newSession(growing, "id1", T0);
+
+    expect(phasesOf(growing, s).map((p) => p.id)).toEqual(["setup", "a", "b", "c"]);
+    const more = saveArtifact(s, "setup", { more: "yes" }, T1);
+    expect(phasesOf(growing, more).map((p) => p.id)).toEqual(["setup", "a", "b", "c", "extra"]);
+  });
+
+  it("unlocks and reopens the added phases like any other", () => {
+    let s = completePhase(growing, newSession(growing, "id1", T0), "setup", { more: "yes" }, T1);
+    for (const id of ["a", "b", "c"]) s = completePhase(growing, s, id, {}, T1);
+
+    expect(phaseState(growing, s, "extra")).toBe("ready");
+    expect(nextPhase(growing, s)?.id).toBe("extra");
+    s = completePhase(growing, s, "extra", {}, T1);
+    s = completePhase(growing, s, "c", {}, T1);
+    expect(phaseState(growing, s, "extra")).toBe("ready");
   });
 });
 

@@ -131,6 +131,24 @@ export function activePersona(settings: Settings): Persona {
   return presets.find((p) => p.id === activePresetId) ?? (presets[0] as Persona);
 }
 
+const personaOverrideSchema = z.object({
+  style: z.enum(INTERVIEWER_STYLES).optional(),
+  interruptions: z.enum(INTERRUPTION_LEVELS).optional(),
+  followUpDepth: z.number().int().min(0).max(3).optional(),
+});
+/** How one phase's interviewer differs from the preset; voice, language and pace stay yours. */
+export type PersonaOverride = z.infer<typeof personaOverrideSchema>;
+
+/** Applies a phase's override; anything invalid (it crosses IPC) is ignored field by field. */
+export function withPersonaOverride(persona: Persona, override: unknown): Persona {
+  if (!isObject(override)) return persona;
+  const valid = Object.entries(personaOverrideSchema.shape).flatMap(([key, schema]) => {
+    const parsed = schema.safeParse(override[key]);
+    return parsed.success && parsed.data !== undefined ? [[key, parsed.data]] : [];
+  });
+  return { ...persona, ...Object.fromEntries(valid) };
+}
+
 export function newPersona(base: Persona): Persona {
   return { ...base, id: crypto.randomUUID(), name: `${base.name} copy` };
 }

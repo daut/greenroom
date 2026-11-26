@@ -6,7 +6,10 @@ voice, then read a scored report and replay the recording. Desktop app for macOS
 Trainings:
 
 - **Job interview:** job description + CV → question bank → study cards with feedback → voice
-  drills → full mock interview → scored report.
+  drills → full mock interview → scored report. Or tick the rounds of a loop (recruiter screen,
+  coding, system design, behavioral, hiring manager) and sit them in order, each with its own
+  interviewer and rubric, then get a hire / no-hire debrief. Coding and design rounds have a
+  scratchpad you share with the interviewer.
 - **Presentation or demo:** the audience listens while you present, then you open the Q&A.
 - **English conversation:** topic-based conversations with corrections afterwards.
 
@@ -104,14 +107,17 @@ add it to `TRAININGS` in `src/shared/trainings/index.ts`. Phases:
 
 | Kind | What it does |
 |---|---|
-| `form` | Fields (text, long text, or documents importable from PDF/TXT/Markdown or a web link) |
+| `form` | Fields (text, long text, documents importable from PDF/TXT/Markdown or a web link, or `pick`: tick any of `options`) |
 | `generate` | Structured text output (zod schema) from earlier artifacts, listed on screen |
 | `cards` | Study cards with drafts, written feedback and confidence |
-| `voice` | A realtime voice session; optional `choices`, `frame` (who the voice plays) and `listenFirst` (listen until handed over) |
+| `voice` | A realtime voice session; optional `choices`, `frame` (who the voice plays), `listenFirst` (listen until handed over), `persona` (style, interruptions, follow-up depth over the preset), `maxMinutes` and `scratchpad` (a text pad shared on demand and scored) |
 | `report` | Scores a voice phase's runs against a rubric: findings with rules and line links, focus, habit review, speech metrics, and a coach discussion. Give it `background` (session context) and `guidance` (what to look for) |
 | `drills` | Typed and spoken reps on the report findings and on habits still open from earlier sessions; coached by the first report's scorer |
 
 Phases unlock after the previous one (or the ones in `after`) and read each other's output through
-`ctx.artifact(id)`. The contract tests in `trainings.test.ts` check every registered training.
+`ctx.artifact(id)`. When the phases depend on the setup (the interview's rounds), add
+`phasesFor(ctx)`; `phases` stays the fresh-session list shown on Home, and code reads a session's
+phases through `phasesOf(def, session)`. The contract tests in `trainings.test.ts` check every
+registered training, fresh and with every `pick` option ticked.
 
 Design system: `DESIGN.md` · product notes: `PRODUCT.md` · roadmap and status: `PROGRESS.md`.

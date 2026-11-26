@@ -1,4 +1,4 @@
-import { isFinished, phaseState, type TrainingSession } from "@shared/training";
+import { isFinished, phaseState, phasesOf, type TrainingSession } from "@shared/training";
 import { trainingById } from "@shared/trainings";
 import { latestScore } from "@shared/trends";
 import { shortDate } from "./text";
@@ -28,8 +28,9 @@ export function SessionRow({ session, onOpen }: { session: TrainingSession; onOp
 function Progress({ session }: { session: TrainingSession }) {
   if (isFinished(session)) return <span className="stamp ok">Finished</span>;
   const def = trainingById(session.trainingId);
-  const total = def?.phases.length ?? 0;
-  const done = def ? def.phases.filter((p) => phaseState(def, session, p.id) === "done").length : 0;
+  const phases = def ? phasesOf(def, session) : [];
+  const total = phases.length;
+  const done = def ? phases.filter((p) => phaseState(def, session, p.id) === "done").length : 0;
   return (
     <span className={done === total && total > 0 ? "stamp" : "stamp pending"}>
       {done} of {total} acts

@@ -39,3 +39,8 @@ export function interviewerInstructions(
     "Saying goodbye without calling end_session leaves the user stuck in the session, so always make the call after your closing sentence.",
   ].join("\n");
 }
+
+/** What the voice reads when the user shares their scratchpad mid-call. */
+export function sharedScratchpad(text: string): string {
+  return `(The candidate shared their scratchpad. This is all of it as of now; earlier versions are out of date.)\n${text.trim() || "(empty)"}`;
+}

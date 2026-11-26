@@ -4,6 +4,7 @@ import {
   type FormArtifact,
   type FormField,
   type FormPhase,
+  pickedIds,
   saveArtifact,
   type TrainingDefinition,
   type TrainingSession,
@@ -78,61 +79,70 @@ export function FormPhaseView({
 
   return (
     <div className="stack">
-      {phase.fields.map((field) => (
-        <div className="field" key={field.id}>
-          <div className="field-head">
-            <label htmlFor={`f-${field.id}`}>
-              {field.label}
-              {field.required ? "" : " (optional)"}
-            </label>
-            {field.kind === "document" && (
-              <span className="field-actions">
-                <button type="button" className="link" onClick={() => importFile(field)}>
-                  Import PDF, TXT or Markdown
-                </button>
-                <button
-                  type="button"
-                  className="link"
-                  aria-expanded={linkField === field.id}
-                  onClick={() => setLinkField(linkField === field.id ? null : field.id)}
-                >
-                  Import from link
-                </button>
-              </span>
+      {phase.fields.map((field) =>
+        field.kind === "pick" ? (
+          <PickField
+            key={field.id}
+            field={field}
+            value={values[field.id] ?? ""}
+            onChange={(v) => set(field.id, v)}
+          />
+        ) : (
+          <div className="field" key={field.id}>
+            <div className="field-head">
+              <label htmlFor={`f-${field.id}`}>
+                {field.label}
+                {field.required ? "" : " (optional)"}
+              </label>
+              {field.kind === "document" && (
+                <span className="field-actions">
+                  <button type="button" className="link" onClick={() => importFile(field)}>
+                    Import PDF, TXT or Markdown
+                  </button>
+                  <button
+                    type="button"
+                    className="link"
+                    aria-expanded={linkField === field.id}
+                    onClick={() => setLinkField(linkField === field.id ? null : field.id)}
+                  >
+                    Import from link
+                  </button>
+                </span>
+              )}
+            </div>
+            {linkField === field.id && (
+              <LinkImport
+                field={field}
+                onImported={(doc) => {
+                  fill(field, doc);
+                  setLinkField(null);
+                }}
+                onCancel={() => setLinkField(null)}
+              />
             )}
+            {field.kind === "text" ? (
+              <input
+                id={`f-${field.id}`}
+                value={values[field.id] ?? ""}
+                placeholder={field.placeholder}
+                onChange={(e) => set(field.id, e.target.value)}
+              />
+            ) : (
+              <textarea
+                id={`f-${field.id}`}
+                rows={field.kind === "document" ? 8 : 4}
+                value={values[field.id] ?? ""}
+                placeholder={
+                  field.placeholder ?? (field.kind === "document" ? "Paste text here" : "")
+                }
+                onChange={(e) => set(field.id, e.target.value)}
+              />
+            )}
+            {imported[field.id] && <span className="hint">Imported from {imported[field.id]}</span>}
+            {field.hint && <span className="hint">{field.hint}</span>}
           </div>
-          {linkField === field.id && (
-            <LinkImport
-              field={field}
-              onImported={(doc) => {
-                fill(field, doc);
-                setLinkField(null);
-              }}
-              onCancel={() => setLinkField(null)}
-            />
-          )}
-          {field.kind === "text" ? (
-            <input
-              id={`f-${field.id}`}
-              value={values[field.id] ?? ""}
-              placeholder={field.placeholder}
-              onChange={(e) => set(field.id, e.target.value)}
-            />
-          ) : (
-            <textarea
-              id={`f-${field.id}`}
-              rows={field.kind === "document" ? 8 : 4}
-              value={values[field.id] ?? ""}
-              placeholder={
-                field.placeholder ?? (field.kind === "document" ? "Paste text here" : "")
-              }
-              onChange={(e) => set(field.id, e.target.value)}
-            />
-          )}
-          {imported[field.id] && <span className="hint">Imported from {imported[field.id]}</span>}
-          {field.hint && <span className="hint">{field.hint}</span>}
-        </div>
-      ))}
+        ),
+      )}
 
       {error && (
         <p className="warn-text" role="alert">
@@ -176,6 +186,48 @@ function useCarriedHabits(
       ]),
     );
   }, [sessions, def, phase, session.id, setValues]);
+}
+
+/** Tick any of the options; stored as their ids in option order, comma-separated. */
+function PickField({
+  field,
+  value,
+  onChange,
+}: {
+  field: FormField;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const picked = new Set(pickedIds(value));
+  const toggle = (id: string) => {
+    const next = new Set(picked);
+    if (!next.delete(id)) next.add(id);
+    onChange(
+      (field.options ?? [])
+        .filter((o) => next.has(o.id))
+        .map((o) => o.id)
+        .join(","),
+    );
+  };
+
+  return (
+    <div className="field">
+      <fieldset className="choice-list">
+        <legend className="label">
+          {field.label}
+          {field.required ? "" : " (optional)"}
+        </legend>
+        {(field.options ?? []).map((o) => (
+          <label key={o.id} className={picked.has(o.id) ? "choice active" : "choice"}>
+            <input type="checkbox" checked={picked.has(o.id)} onChange={() => toggle(o.id)} />
+            <span className="choice-label">{o.label}</span>
+            {o.detail && <span className="choice-detail">{o.detail}</span>}
+          </label>
+        ))}
+      </fieldset>
+      {field.hint && <span className="hint">{field.hint}</span>}
+    </div>
+  );
 }
 
 function LinkImport({

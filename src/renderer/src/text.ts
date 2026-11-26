@@ -12,10 +12,27 @@ export function errorMessage(error: unknown): string {
   return message.replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
 }
 
-const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+const ROMAN: [number, string][] = [
+  [40, "XL"],
+  [10, "X"],
+  [9, "IX"],
+  [5, "V"],
+  [4, "IV"],
+  [1, "I"],
+];
 
+/** Act numbers; an interview loop can have more than twelve. */
 export function roman(n: number): string {
-  return ROMAN[n - 1] ?? String(n);
+  if (n < 1 || n >= 50) return String(n);
+  let rest = n;
+  let out = "";
+  for (const [value, symbol] of ROMAN) {
+    while (rest >= value) {
+      out += symbol;
+      rest -= value;
+    }
+  }
+  return out;
 }
 
 export function shortDate(iso: string): string {

@@ -229,6 +229,13 @@ describe("scoringPrompt", () => {
     expect(prompt).toContain("up to 4");
     expect(prompt).toContain("#2 [0:02] Candidate: Because um it mattered");
     expect(prompt).not.toContain("Known habits");
+    expect(prompt).not.toContain("scratchpad");
+  });
+
+  it("scores the code or design notes the candidate left in the scratchpad", () => {
+    const prompt = scoringPrompt(phase, ctx, { ...run, scratchpad: "def solve(xs): ..." }, []);
+
+    expect(prompt).toContain("def solve(xs): ...");
   });
 
   it("leaves audio criteria to the review and shares its findings with the scorer", () => {

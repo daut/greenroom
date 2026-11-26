@@ -1,6 +1,11 @@
 import type { SpeechMetrics } from "./metrics";
 import type { ReportArtifact, RubricCriterion } from "./report";
-import type { TrainingDefinition, TrainingSession } from "./training";
+import {
+  phasesOf,
+  type ReportPhase,
+  type TrainingDefinition,
+  type TrainingSession,
+} from "./training";
 
 export interface TrendPoint {
   at: string;
@@ -20,7 +25,7 @@ export interface Trend {
 
 /** Overall score of the latest run in the session's main (first) report phase. */
 export function latestScore(def: TrainingDefinition, session: TrainingSession): number | null {
-  const main = def.phases.find((p) => p.kind === "report");
+  const main = phasesOf(def, session).find((p) => p.kind === "report");
   if (!main) return null;
   const reports = Object.values((session.artifacts[main.id] as ReportArtifact | undefined) ?? {});
   const latest = reports.sort((a, b) => b.runAt.localeCompare(a.runAt))[0];
@@ -31,10 +36,9 @@ export function latestScore(def: TrainingDefinition, session: TrainingSession): 
 export function scoreTrends(sessions: TrainingSession[], trainings: TrainingDefinition[]): Trend[] {
   const trends: Trend[] = [];
   for (const def of trainings) {
-    for (const phase of def.phases) {
-      if (phase.kind !== "report") continue;
-      const points = sessions
-        .filter((s) => s.trainingId === def.id)
+    const own = sessions.filter((s) => s.trainingId === def.id);
+    for (const phase of reportPhases(def, own)) {
+      const points = own
         .flatMap((s) =>
           Object.values((s.artifacts[phase.id] as ReportArtifact | undefined) ?? {}).map(
             (r): TrendPoint => ({
@@ -59,4 +63,13 @@ export function scoreTrends(sessions: TrainingSession[], trainings: TrainingDefi
     }
   }
   return trends;
+}
+
+/** The report phases of any of these sessions, e.g. interview rounds only some sessions picked. */
+function reportPhases(def: TrainingDefinition, sessions: TrainingSession[]): ReportPhase[] {
+  const byId = new Map<string, ReportPhase>();
+  for (const phase of [def.phases, ...sessions.map((s) => phasesOf(def, s))].flat()) {
+    if (phase.kind === "report" && !byId.has(phase.id)) byId.set(phase.id, phase);
+  }
+  return [...byId.values()];
 }

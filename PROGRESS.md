@@ -152,6 +152,19 @@ Handover notes for the next agent: see README "Development" and "Adding a traini
 - [!] Untested live: audio request shape, real cost per minute (estimate assumes 10 audio tokens/s), WebM decode of the mic file
 - Decision: no transcription logprobs (only on `gpt-4o-*-transcribe`, shut down Feb 2027; `gpt-transcribe` doesn't document them)
 
+### Interview loop (built)
+- [x] `phasesFor(ctx)` on `TrainingDefinition`, read via `phasesOf(def, session)` everywhere (engine, session screen and row, habits, trends, drills; TDD)
+- [x] `pick` form field (comma-separated ids). Interview setup gets "Interview rounds"; none ticked = the old single mock, so old sessions are unchanged
+- [x] Round catalog (`trainings/interview-rounds.ts`): recruiter screen, coding, system design, behavioral, hiring manager; each with frame, persona override, minutes, question brief, conduct and rubric. No bar raiser (user: start with these five)
+- [x] Picked rounds replace mock + report: per-round questions in the bank, `round-<id>` voice + `round-<id>-report`; a round opens once the previous one is scored; later interviewers get earlier rounds' summaries and focus habits as panel notes; `debrief` (generate, score model) gives per-round and overall verdicts and 3 fixes
+- [x] `persona` override on `VoiceCallRequest`, validated field by field in main (`withPersonaOverride`); voice, language and pace stay the preset's
+- [x] Scratchpad (coding, design): manual "Share with interviewer" sends the whole pad as a user message (no auto-sync, user's call); the pad at hang-up is saved on the run and given to the scorer
+- Decision: rounds are not pre-ticked, so a new interview session is still the basic flow until you pick rounds
+- [x] Verified in the app (isolated data dir, Claude Code): setup ticks, per-round bank, gating, round scoring (scratchpad code judged), panel notes in the next round's task, debrief, History trends per round
+- [!] Untested live: the voice calls themselves (persona override in a real call, Share with interviewer)
+- `npm run dev` now uses `--watch`: main/preload changes rebuild and restart Electron (ends a live call)
+- [ ] Later: a session score for loops (Home shows the first round's score, as `latestScore` reads the first report)
+
 ### Waiting on the user
 - [!] Live voice drill / mock / presentation with an OpenAI key (also confirms the self-hang-up fix)
 - [!] Verify audio on Linux (PipeWire + PulseAudio)
@@ -163,6 +176,8 @@ Handover notes for the next agent: see README "Development" and "Adding a traini
 - [x] Min-window Drill: cost + Start moved above the question list under 640px
 
 ## Log
+
+- 2026-11-26: Interview loop: pick rounds in the setup, each round has its own interviewer, rubric and panel notes from earlier rounds, then a hiring debrief. Scratchpad for coding and design. Untested live.
 
 - 2026-11-26: Logo added to todo. Pronunciation/understandability scoring built: audio-model review of mic-only clips feeds a new rubric criterion and findings (logprobs ruled out, deprecated models only). Untested live.
 

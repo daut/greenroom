@@ -48,6 +48,9 @@ export function VoicePhaseView({
   const startedWith = useRef<Choice | null>(null);
   const runs = (session.artifacts[phase.id] as VoiceArtifact | undefined) ?? [];
   const saved = useRef(false);
+  const [pad, setPad] = useState("");
+  const padAtEnd = useRef(pad);
+  padAtEnd.current = pad;
   const unscored = reports ? runs.filter((r) => !reports[r.at]).length : 0;
 
   useEffect(() => {
@@ -71,7 +74,9 @@ export function VoicePhaseView({
       recordingPath: voice.recordingPath,
       micRecordingPath: voice.micRecordingPath,
       recordingOffsetMs: voice.recordingOffsetMs,
+      ...(padAtEnd.current.trim() && { scratchpad: padAtEnd.current }),
     };
+    setPad("");
     update((s) => {
       const previous = (s.artifacts[phase.id] as VoiceArtifact | undefined) ?? [];
       return completePhase(def, s, phase.id, [...previous, run]);
@@ -87,6 +92,8 @@ export function VoicePhaseView({
     void voice.start(phase.session, phase.task(contextOf(session), choice), {
       frame: phase.frame,
       listenFirst: Boolean(phase.listenFirst),
+      persona: phase.persona,
+      maxMinutes: phase.maxMinutes,
     });
   };
 
@@ -109,7 +116,14 @@ export function VoicePhaseView({
         onChange={setChoice}
       />
 
-      {settings && !live && <SessionBilling settings={settings} kind={phase.session} />}
+      {settings && !live && (
+        <SessionBilling
+          settings={settings}
+          kind={phase.session}
+          maxMinutes={phase.maxMinutes}
+          override={phase.persona}
+        />
+      )}
 
       <div className="session-controls">
         {voice.status === "live" ? (
@@ -153,6 +167,15 @@ export function VoicePhaseView({
           elapsedMs={voice.elapsedMs}
           maxMinutes={voice.maxMinutes}
           costUsd={settings?.limits.showCostMeter ? voice.transcript.costUsd : null}
+        />
+      )}
+      {phase.scratchpad && (
+        <Scratchpad
+          key={runs.length}
+          {...phase.scratchpad}
+          value={pad}
+          onChange={setPad}
+          onShare={voice.status === "live" ? () => voice.share(pad) : null}
         />
       )}
       {live && voice.transcript.lines.length > 0 && (
@@ -201,6 +224,59 @@ export function VoicePhaseView({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/** The interviewer sees the pad only when you share it, like turning your laptop around. */
+function Scratchpad({
+  label,
+  placeholder,
+  value,
+  onChange,
+  onShare,
+}: {
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  /** Null while there's no call to share with. */
+  onShare: (() => void) | null;
+}) {
+  const [shared, setShared] = useState<string | null>(null);
+  const status =
+    shared === null ? "Not shared yet" : shared === value ? "Shared" : "Changed since you shared";
+
+  return (
+    <div className="field scratchpad">
+      <div className="field-head">
+        <label htmlFor="scratchpad">{label}</label>
+        {onShare && (
+          <span className="field-actions">
+            <span className="hint">{status}</span>
+            <button
+              type="button"
+              className="btn"
+              disabled={shared === value}
+              onClick={() => {
+                onShare();
+                setShared(value);
+              }}
+            >
+              Share with interviewer
+            </button>
+          </span>
+        )}
+      </div>
+      <textarea
+        id="scratchpad"
+        rows={14}
+        value={value}
+        placeholder={placeholder}
+        spellCheck={false}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <span className="hint">The scorer reads what's here when the call ends.</span>
     </div>
   );
 }

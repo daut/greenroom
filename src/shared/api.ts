@@ -1,5 +1,5 @@
 import type { KeyStatus, KeyTestResult, Provider } from "./keys";
-import type { Settings } from "./settings";
+import type { PersonaOverride, Settings } from "./settings";
 import type { ClaudeCodeStatus, TextRequest } from "./text";
 import type { TrainingSession } from "./training";
 
@@ -22,6 +22,8 @@ export interface VoiceCallRequest {
   coach?: boolean;
   /** A shorter limit than the one in Settings, e.g. a three-minute drill. */
   maxMinutes?: number;
+  /** This call's interviewer manner, over the active preset (e.g. a tough design round). */
+  persona?: PersonaOverride;
 }
 
 export interface VoiceCall {

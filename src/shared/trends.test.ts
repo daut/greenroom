@@ -70,6 +70,22 @@ describe("scoreTrends", () => {
     expect(trends[0]?.points[0]?.scores).toEqual({ structure: 2 });
   });
 
+  it("includes report phases that only some sessions have, like picked interview rounds", () => {
+    const rounds: TrainingDefinition = {
+      ...def,
+      phasesFor: (ctx) =>
+        ctx.artifact("design")
+          ? [...def.phases, { ...(def.phases[1] as ReportPhase), id: "design", title: "Design" }]
+          : def.phases,
+    };
+    const loop = session("a", []);
+    loop.artifacts.design = { x: report("2026-11-25T10:00:00Z", 4) };
+
+    expect(scoreTrends([session("b", []), loop], [rounds]).map((t) => t.title)).toEqual([
+      "Job interview · Design",
+    ]);
+  });
+
   it("skips report phases with no reports and unknown trainings", () => {
     expect(scoreTrends([session("a", [])], [def])).toEqual([]);
     expect(

@@ -5,6 +5,7 @@ import {
   nextPhase,
   type Phase,
   phaseState,
+  phasesOf,
   reopenSession,
   type TrainingDefinition,
   type TrainingSession,
@@ -35,7 +36,7 @@ export function SessionScreen({ id, onBack }: { id: string; onBack: () => void }
   // Pin the open phase so finishing it (e.g. generating) doesn't jump away; "Continue" unpins.
   useEffect(() => {
     if (selected === null && session && def) {
-      setSelected((nextPhase(def, session) ?? def.phases.at(-1))?.id ?? null);
+      setSelected((nextPhase(def, session) ?? phasesOf(def, session).at(-1))?.id ?? null);
     }
   }, [selected, session, def]);
 
@@ -51,8 +52,8 @@ export function SessionScreen({ id, onBack }: { id: string; onBack: () => void }
     );
   }
 
-  const current =
-    def.phases.find((p) => p.id === selected) ?? nextPhase(def, session) ?? def.phases.at(-1);
+  const phases = phasesOf(def, session);
+  const current = phases.find((p) => p.id === selected) ?? nextPhase(def, session) ?? phases.at(-1);
   const goNext = () => setSelected(null);
 
   return (
@@ -79,7 +80,7 @@ export function SessionScreen({ id, onBack }: { id: string; onBack: () => void }
       <div className="session-layout">
         <nav aria-label="Phases">
           <ol className="acts-nav">
-            {def.phases.map((p, i) => {
+            {phases.map((p, i) => {
               const state = phaseState(def, session, p.id);
               const stamp = STATE_STAMP[state];
               return (
@@ -112,6 +113,7 @@ export function SessionScreen({ id, onBack }: { id: string; onBack: () => void }
             </div>
             <PhaseView
               def={def}
+              phases={phases}
               phase={current}
               session={session}
               update={update}
@@ -123,7 +125,7 @@ export function SessionScreen({ id, onBack }: { id: string; onBack: () => void }
                 setSelected(phaseId);
               }}
             />
-            {!isFinished(session) && canFinishAt(def, session, current) && (
+            {!isFinished(session) && canFinishAt(def, phases, session, current) && (
               <FinishLine update={update} />
             )}
           </div>
@@ -135,6 +137,7 @@ export function SessionScreen({ id, onBack }: { id: string; onBack: () => void }
 
 function PhaseView({
   def,
+  phases,
   phase,
   session,
   update,
@@ -144,6 +147,7 @@ function PhaseView({
   onDrill,
 }: {
   def: TrainingDefinition;
+  phases: Phase[];
   phase: Phase;
   session: NonNullable<ReturnType<typeof useTrainingSession>["session"]>;
   update: ReturnType<typeof useTrainingSession>["update"];
@@ -161,7 +165,7 @@ function PhaseView({
     case "cards":
       return <CardsPhaseView {...shared} phase={phase} onDone={onDone} />;
     case "voice": {
-      const report = def.phases.find((p) => p.kind === "report" && p.source === phase.id);
+      const report = phases.find((p) => p.kind === "report" && p.source === phase.id);
       return (
         <VoicePhaseView
           {...shared}
@@ -174,7 +178,7 @@ function PhaseView({
       );
     }
     case "report": {
-      const drills = def.phases.find((p) => p.kind === "drills");
+      const drills = phases.find((p) => p.kind === "drills");
       return (
         <ReportPhaseView
           {...shared}
@@ -189,9 +193,14 @@ function PhaseView({
 }
 
 /** The last act, or any scored report: some acts after a report (like drills) are optional. */
-function canFinishAt(def: TrainingDefinition, session: TrainingSession, phase: Phase): boolean {
+function canFinishAt(
+  def: TrainingDefinition,
+  phases: Phase[],
+  session: TrainingSession,
+  phase: Phase,
+): boolean {
   const state = phaseState(def, session, phase.id);
-  if (phase.id === def.phases.at(-1)?.id) return state !== "locked";
+  if (phase.id === phases.at(-1)?.id) return state !== "locked";
   return phase.kind === "report" && state === "done";
 }
 

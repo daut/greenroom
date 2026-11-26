@@ -8,7 +8,14 @@ import {
   pronunciationReview,
   scoreFromUnderstandability,
 } from "./pronunciation";
-import type { PhaseContext, ReportPhase, VoiceRun } from "./training";
+import {
+  type PhaseContext,
+  phasesOf,
+  type ReportPhase,
+  type TrainingDefinition,
+  type TrainingSession,
+  type VoiceRun,
+} from "./training";
 
 export interface RubricCriterion {
   id: string;
@@ -108,6 +115,15 @@ export interface KnownHabit {
   better: string;
 }
 
+/** Every report of a session, across all its report phases. */
+export function sessionReports(def: TrainingDefinition, session: TrainingSession): Report[] {
+  return phasesOf(def, session).flatMap((p) =>
+    p.kind === "report"
+      ? Object.values((session.artifacts[p.id] as ReportArtifact | undefined) ?? {})
+      : [],
+  );
+}
+
 const DEFAULT_MAX_FINDINGS = 6;
 
 export function scoringPrompt(
@@ -126,6 +142,9 @@ export function scoringPrompt(
     audio ? audioReviewSection(audio, run.lines) : "",
     known.length ? knownHabitsSection(known) : "",
     `Transcript (lines are numbered; the "Candidate" is the learner):\n${formatTranscript(run.lines)}`,
+    run.scratchpad?.trim()
+      ? `The candidate's scratchpad when the call ended (their code or notes; findings about it use line 0):\n${run.scratchpad}`
+      : "",
   ]
     .filter(Boolean)
     .join("\n\n");

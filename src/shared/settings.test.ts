@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activePersona, defaultSettings, parseSettings } from "./settings";
+import { activePersona, defaultSettings, parseSettings, withPersonaOverride } from "./settings";
 
 describe("parseSettings", () => {
   it("returns defaults for empty or non-object input", () => {
@@ -67,5 +67,21 @@ describe("activePersona", () => {
     settings.interviewer.activePresetId = "deleted";
 
     expect(activePersona(settings)).toEqual(settings.interviewer.presets[0]);
+  });
+});
+
+describe("withPersonaOverride", () => {
+  const base = activePersona(defaultSettings());
+
+  it("changes the manner but keeps your voice, language and pace", () => {
+    const tough = withPersonaOverride(base, { style: "tough", followUpDepth: 3 });
+
+    expect(tough).toEqual({ ...base, style: "tough", followUpDepth: 3 });
+  });
+
+  it("ignores anything that isn't a valid override", () => {
+    expect(withPersonaOverride(base, { style: "evil", voice: "x" })).toEqual(base);
+    expect(withPersonaOverride(base, "nope")).toEqual(base);
+    expect(withPersonaOverride(base, undefined)).toEqual(base);
   });
 });

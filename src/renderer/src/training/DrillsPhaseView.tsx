@@ -20,7 +20,7 @@ import {
   typedResult,
 } from "@shared/drills";
 import { type Habit, trackHabits } from "@shared/habits";
-import { habitKey, type ReportArtifact } from "@shared/report";
+import { habitKey, sessionReports } from "@shared/report";
 import {
   completePhase,
   contextOf,
@@ -51,11 +51,11 @@ export function DrillsPhaseView({
   /** Habit key to open, e.g. from "Drill this" in a report. */
   initialTarget: string | null;
 }) {
-  const coach = coachPhase(def);
+  const coach = coachPhase(def, session);
   const allSessions = useAllSessions();
   const entries = (session.artifacts[phase.id] as DrillEntry[] | undefined) ?? [];
   const others = (allSessions ?? []).filter((s) => s.id !== session.id);
-  const targets = drillTargets(reportsOf(def, session), trackHabits(others, def));
+  const targets = drillTargets(sessionReports(def, session), trackHabits(others, def));
   const status = new Map(trackHabits([...others, session], def).map((h) => [h.key, h]));
   const [open, setOpen] = useState<string | null>(initialTarget ?? targets[0]?.key ?? null);
 
@@ -381,12 +381,4 @@ function TargetStamp({
   if (target.focus) return <span className="stamp">Focus</span>;
   if (target.earlier) return <span className="stamp pending">Earlier</span>;
   return <span />;
-}
-
-function reportsOf(def: TrainingDefinition, session: TrainingSession) {
-  return def.phases.flatMap((p) =>
-    p.kind === "report"
-      ? Object.values((session.artifacts[p.id] as ReportArtifact | undefined) ?? {})
-      : [],
-  );
 }

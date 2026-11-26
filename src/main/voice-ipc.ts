@@ -11,7 +11,7 @@ import {
 import { interviewerInstructions } from "@shared/interviewer";
 import { reviewCostUsd } from "@shared/pronunciation";
 import { buildRealtimeSession } from "@shared/realtime";
-import { activePersona } from "@shared/settings";
+import { activePersona, withPersonaOverride } from "@shared/settings";
 import { ipcMain, shell, systemPreferences } from "electron";
 import type { KeyStore } from "./key-store";
 import { createRealtimeCall } from "./realtime-call";
@@ -40,7 +40,7 @@ export function registerVoiceIpc({ settingsStore, keyStore, ledger, recordingsDi
 
     const settings = settingsStore.load();
     const model = settings.models[request.kind];
-    const preset = activePersona(settings);
+    const preset = withPersonaOverride(activePersona(settings), request.persona);
     const persona = request.voice ? { ...preset, voice: request.voice } : preset;
     const limit =
       request.kind === "mock" ? settings.limits.mockMaxMinutes : settings.limits.drillMaxMinutes;
