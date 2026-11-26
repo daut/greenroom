@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { completePhase, contextOf, newSession, phaseState, type VoicePhase } from "../training";
+import {
+  CUSTOM_CHOICE,
+  completePhase,
+  contextOf,
+  newSession,
+  phaseState,
+  RANDOM_CHOICE,
+  type VoicePhase,
+} from "../training";
+import { englishTraining } from "./english";
 import { TRAININGS } from "./index";
 import { interviewTraining, type QuestionBank } from "./interview";
 
@@ -75,7 +84,7 @@ describe("interview training", () => {
     const ctx = contextOf(preparedSession());
 
     expect(drill.choices?.(ctx).map((c) => c.id)).toEqual(["q1", "q2"]);
-    const task = drill.task(ctx, "q2");
+    const task = drill.task(ctx, { id: "q2", label: "Design a rate limiter." });
     expect(task).toContain("Design a rate limiter.");
     expect(task).toContain("Staff engineer at Acme");
   });
@@ -94,5 +103,44 @@ describe("presentation training", () => {
 
     expect(rehearsal.listenFirst?.button).toBe("Open the Q&A");
     expect(rehearsal.frame).toContain("audience");
+  });
+});
+
+describe("english training", () => {
+  const conversation = () =>
+    englishTraining.phases.find((p) => p.id === "conversation") as VoicePhase;
+  const ctx = () =>
+    contextOf(
+      completePhase(englishTraining, newSession(englishTraining, "s"), "setup", {
+        level: "B1",
+        focus: "past tenses",
+      }),
+    );
+
+  it("offers a wide range of topics with unique ids", () => {
+    const ids =
+      conversation()
+        .choices?.(ctx())
+        .map((c) => c.id) ?? [];
+
+    expect(ids.length).toBeGreaterThanOrEqual(15);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).not.toContain(CUSTOM_CHOICE);
+    expect(ids).not.toContain(RANDOM_CHOICE);
+  });
+
+  it("talks about a topic the learner typed", () => {
+    const task = conversation().task(ctx(), { id: CUSTOM_CHOICE, label: "My cat's diet" });
+
+    expect(task).toContain("My cat's diet");
+    expect(task).toContain("B1");
+  });
+
+  it("asks for a random topic fitted to the learner, avoiding earlier ones", () => {
+    const prompt = conversation().randomChoice?.prompt(ctx(), ["Your dream holiday"]) ?? "";
+
+    expect(prompt).toContain("B1");
+    expect(prompt).toContain("past tenses");
+    expect(prompt).toContain("Your dream holiday");
   });
 });

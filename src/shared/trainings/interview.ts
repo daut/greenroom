@@ -144,8 +144,8 @@ export const interviewTraining: TrainingDefinition = {
       session: "drill",
       after: ["questions"],
       choices: (ctx) => bankOf(ctx).map((q) => ({ id: q.id, label: q.question })),
-      task: (ctx, choiceId) => {
-        const q = bankOf(ctx).find((x) => x.id === choiceId) ?? bankOf(ctx)[0];
+      task: (ctx, choice) => {
+        const q = bankOf(ctx).find((x) => x.id === choice?.id) ?? bankOf(ctx)[0];
         return `${briefing(ctx)}
 
 This is a single-question drill. Briefly greet the candidate, then ask exactly this question: "${q?.question ?? "Tell me about yourself."}"

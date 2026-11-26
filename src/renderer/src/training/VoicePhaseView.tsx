@@ -1,6 +1,7 @@
 import type { ReportArtifact } from "@shared/report";
 import type { Settings } from "@shared/settings";
 import {
+  type Choice,
   completePhase,
   contextOf,
   type TrainingDefinition,
@@ -14,6 +15,7 @@ import { dateTime, formatUsd } from "../text";
 import { SessionBilling } from "../voice/SessionBilling";
 import { clock, RunningTime, Transcript } from "../voice/SessionPanel";
 import { type EndReason, useVoiceSession } from "../voice/useVoiceSession";
+import { ChoicePicker } from "./ChoicePicker";
 import type { UpdateSession } from "./useTrainingSession";
 
 const ENDED_BY: Record<EndReason, string> = {
@@ -41,7 +43,9 @@ export function VoicePhaseView({
   const [settings, setSettings] = useState<Settings | null>(null);
   const voice = useVoiceSession(settings?.audio ?? null);
   const choices = phase.choices?.(contextOf(session)) ?? [];
-  const [choice, setChoice] = useState<string | null>(choices[0]?.id ?? null);
+  const asksForChoice = choices.length > 0 || Boolean(phase.customChoice || phase.randomChoice);
+  const [choice, setChoice] = useState<Choice | null>(null);
+  const startedWith = useRef<Choice | null>(null);
   const runs = (session.artifacts[phase.id] as VoiceArtifact | undefined) ?? [];
   const saved = useRef(false);
   const unscored = reports ? runs.filter((r) => !reports[r.at]).length : 0;
@@ -58,7 +62,8 @@ export function VoicePhaseView({
     const lines = voice.transcript.lines.filter((l) => l.text.trim());
     if (lines.length === 0) return;
     const run: VoiceRun = {
-      choiceId: choice,
+      choiceId: startedWith.current?.id ?? null,
+      choiceLabel: startedWith.current?.label,
       at: new Date().toISOString(),
       endedBy: voice.endedBy,
       lines: lines.map(({ speaker, text, startMs, endMs }) => ({ speaker, text, startMs, endMs })),
@@ -71,12 +76,13 @@ export function VoicePhaseView({
       const previous = (s.artifacts[phase.id] as VoiceArtifact | undefined) ?? [];
       return completePhase(def, s, phase.id, [...previous, run]);
     });
-  }, [voice, choice, def, phase.id, update]);
+  }, [voice, def, phase.id, update]);
 
   const [handedOff, setHandedOff] = useState(false);
 
   const start = () => {
     saved.current = false;
+    startedWith.current = choice;
     setHandedOff(false);
     void voice.start(phase.session, phase.task(contextOf(session), choice), {
       frame: phase.frame,
@@ -95,25 +101,13 @@ export function VoicePhaseView({
 
   return (
     <div className="stack voice-phase">
-      {choices.length > 0 && (
-        <fieldset
-          className={choices.length > 5 ? "choice-list scroll" : "choice-list"}
-          disabled={live}
-        >
-          <legend className="label">Pick one</legend>
-          {choices.map((c) => (
-            <label key={c.id} className={c.id === choice ? "choice active" : "choice"}>
-              <input
-                type="radio"
-                name={`choice-${phase.id}`}
-                checked={c.id === choice}
-                onChange={() => setChoice(c.id)}
-              />
-              <span>{c.label}</span>
-            </label>
-          ))}
-        </fieldset>
-      )}
+      <ChoicePicker
+        phase={phase}
+        ctx={contextOf(session)}
+        pastLabels={runs.flatMap((r) => r.choiceLabel ?? [])}
+        disabled={live}
+        onChange={setChoice}
+      />
 
       {settings && !live && <SessionBilling settings={settings} kind={phase.session} />}
 
@@ -126,7 +120,7 @@ export function VoicePhaseView({
           <button
             type="button"
             className="btn primary"
-            disabled={live || !settings}
+            disabled={live || !settings || (asksForChoice && !choice)}
             onClick={start}
           >
             {voice.status === "connecting"
@@ -182,7 +176,9 @@ export function VoicePhaseView({
                   )}
                 </span>
                 <span className="script-text">
-                  {choices.find((c) => c.id === run.choiceId)?.label ?? phase.title}
+                  {run.choiceLabel ??
+                    choices.find((c) => c.id === run.choiceId)?.label ??
+                    phase.title}
                   <span className="item-detail">
                     {clock(lastMs(run))} · {run.lines.filter((l) => l.speaker === "you").length}{" "}
                     answers · {formatUsd(run.costUsd)}

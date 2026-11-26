@@ -88,15 +88,32 @@ export interface VoicePhase extends PhaseBase {
   kind: "voice";
   session: VoiceSessionKind;
   /** Optional pick before starting, e.g. which question to drill. */
-  choices?: (ctx: PhaseContext) => { id: string; label: string }[];
-  task: (ctx: PhaseContext, choiceId: string | null) => string;
+  choices?: (ctx: PhaseContext) => Choice[];
+  /** Adds a "type your own" option to the choices. */
+  customChoice?: { label: string; placeholder: string };
+  /** Adds an option whose label the text model writes on the fly. */
+  randomChoice?: {
+    label: string;
+    system: string;
+    prompt: (ctx: PhaseContext, pastLabels: string[]) => string;
+  };
+  task: (ctx: PhaseContext, choice: Choice | null) => string;
   /** Who the voice plays, e.g. "an audience member". Defaults to a job interviewer. */
   frame?: string;
   /** The voice only listens until you press the hand-over button (e.g. present, then Q&A). */
   listenFirst?: { button: string; message: string };
 }
+export interface Choice {
+  id: string;
+  label: string;
+}
+export const CUSTOM_CHOICE = "custom";
+export const RANDOM_CHOICE = "random";
+
 export interface VoiceRun {
   choiceId: string | null;
+  /** What was picked, typed or generated; older runs only have `choiceId`. */
+  choiceLabel?: string;
   at: string;
   endedBy: string | null;
   lines: { speaker: "you" | "interviewer"; text: string; startMs: number; endMs: number | null }[];

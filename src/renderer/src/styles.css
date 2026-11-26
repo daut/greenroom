@@ -1597,6 +1597,25 @@ select.narrow {
   font-weight: 700;
 }
 
+.choice-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.choice-body .choice-detail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.generated-topic {
+  font-size: var(--step-0);
+  color: var(--ink);
+}
+
 .choice-detail,
 .choice-status {
   grid-column: 2;

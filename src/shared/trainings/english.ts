@@ -1,12 +1,45 @@
 import type { RubricCriterion } from "../report";
-import type { FormArtifact, PhaseContext, TrainingDefinition } from "../training";
+import type { Choice, FormArtifact, PhaseContext, TrainingDefinition } from "../training";
 
-const TOPICS = [
+const TOPICS: Choice[] = [
   { id: "work", label: "Your work and a recent project" },
   { id: "opinion", label: "Defend an opinion on a tech trend" },
   { id: "story", label: "Tell a story about a mistake you learned from" },
   { id: "explain", label: "Explain a technical idea to a non-engineer" },
   { id: "smalltalk", label: "Small talk before a meeting" },
+  { id: "weekend", label: "What you did last weekend" },
+  { id: "hometown", label: "Show a visitor around your hometown" },
+  { id: "travel", label: "The best and worst trip you've taken" },
+  { id: "food", label: "A dish you'd cook for guests, and how" },
+  { id: "media", label: "A book, film or series you'd recommend" },
+  { id: "hobby", label: "A hobby you'd like to pick up, and why" },
+  { id: "remote", label: "Debate: is remote work better than the office?" },
+  { id: "ai", label: "Debate: will AI make jobs better or worse?" },
+  { id: "lottery", label: "If you won the lottery tomorrow" },
+  { id: "timetravel", label: "If you could live in another decade" },
+  { id: "return", label: "Role-play: return a faulty product to a shop" },
+  { id: "landlord", label: "Role-play: complain to your landlord about a repair" },
+  { id: "networking", label: "Role-play: meet a stranger at a conference" },
+  { id: "doctor", label: "Role-play: describe symptoms to a doctor" },
+  { id: "feedback", label: "Role-play: give a colleague difficult feedback" },
+];
+
+/** Steers the model off its few favourite "random" topics. */
+const RANDOM_AREAS = [
+  "daily life",
+  "childhood memories",
+  "travel and places",
+  "food and cooking",
+  "sports and health",
+  "money and shopping",
+  "nature and the environment",
+  "science and the future",
+  "culture and traditions",
+  "a hypothetical 'what if' question",
+  "a light-hearted debate",
+  "a role-play of an everyday situation",
+  "a role-play of a tricky situation at work",
+  "a moral dilemma",
 ];
 
 const RUBRIC: RubricCriterion[] = [
@@ -80,10 +113,26 @@ export const englishTraining: TrainingDefinition = {
       frame:
         "You are a friendly English conversation partner for a non-native professional. The user is practising spoken English.",
       choices: () => TOPICS,
-      task: (ctx, choiceId) => {
-        const topic = TOPICS.find((t) => t.id === choiceId) ?? TOPICS[0];
+      randomChoice: {
+        label: "Surprise me",
+        system:
+          "You suggest topics for spoken English practice. Reply with one topic, written as a short instruction or question of at most 12 words, like the examples.",
+        prompt: (ctx, pastLabels) => `${goals(ctx)}
+Area: ${pick(RANDOM_AREAS)}.
+Examples of the style: ${TOPICS.slice(0, 3)
+          .map((t) => `"${t.label}"`)
+          .join(", ")}.
+${pastLabels.length > 0 ? `Don't repeat or closely echo these earlier topics: ${pastLabels.map((l) => `"${l}"`).join(", ")}.` : ""}
+Pick something that gives a learner at this level plenty to say.`,
+      },
+      customChoice: {
+        label: "Your own topic",
+        placeholder: "Anything you'd like to talk about",
+      },
+      task: (ctx, choice) => {
+        const topic = choice?.label ?? TOPICS[0]?.label;
         return `${goals(ctx)}
-Topic: ${topic?.label}. Open the topic with one question, then keep a natural conversation going with short turns and follow-up questions that make the user speak more than you. Use English only, at a level slightly above theirs. Don't correct mistakes during the conversation. After about five minutes, close warmly and end the session.`;
+Topic: ${topic}. If the topic is a role-play, set the scene in one sentence and play the other person. Open the topic with one question, then keep a natural conversation going with short turns and follow-up questions that make the user speak more than you. Use English only, at a level slightly above theirs. Don't correct mistakes during the conversation. After about five minutes, close warmly and end the session.`;
       },
     },
     {
@@ -115,4 +164,8 @@ If the learner said they want to work on something, check that first. Skip slips
 function goals(ctx: PhaseContext): string {
   const s = ctx.artifact<FormArtifact>("setup") ?? {};
   return `Learner level: ${s.level ?? "unknown"}.${s.focus ? ` They want to work on: ${s.focus}.` : ""}`;
+}
+
+function pick<T>(items: T[]): T | undefined {
+  return items[Math.floor(Math.random() * items.length)];
 }
