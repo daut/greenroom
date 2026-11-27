@@ -34,6 +34,13 @@ describe("interviewerInstructions", () => {
     expect(text).toMatch(/you are coaching/i);
   });
 
+  it("has a coach speak once per turn and never answer for the user", () => {
+    const text = interviewerInstructions(persona, "x", "Coach.", { coach: true });
+
+    expect(text).toMatch(/one message per turn/i);
+    expect(text).toMatch(/never speak for the user/i);
+  });
+
   it("doesn't cast a coach as the interviewer persona, but keeps its language", () => {
     const text = interviewerInstructions({ ...persona, language: "German" }, "x", "Coach.", {
       coach: true,

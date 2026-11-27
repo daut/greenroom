@@ -1,5 +1,8 @@
 import { z } from "zod";
+import { type Clip, type ClipOptions, DEFAULT_CLIP_OPTIONS, pickClips } from "./clips";
 import type { Habit } from "./habits";
+import type { SpokenLine } from "./metrics";
+import { clipLabel } from "./pronunciation";
 import { type Finding, formatTranscript, habitKey, type Report } from "./report";
 import {
   phasesOf,
@@ -58,10 +61,33 @@ export interface TypedDrill extends DrillBase {
   feedback?: TypedFeedback[];
 }
 
-export interface SpokenDrill extends DrillBase {
+export interface SpokenAttempt {
+  /** What you said on this try, as transcribed. */
+  said: string;
+  ok: boolean;
+  /** What the target sounded like or what went wrong; empty when right. */
+  heard: string;
+  why: string;
+}
+
+/** How a spoken round gets scored: by ear, from the transcript, or not at all. */
+export type SpokenCheckMethod = "audio" | "transcript" | "none";
+
+/** Always has `recordingPath` (maybe null) so sync treats it like a run with files. */
+export type DrillRecording = Pick<
+  VoiceRun,
+  "recordingPath" | "micRecordingPath" | "recordingOffsetMs"
+>;
+
+export interface SpokenDrill extends DrillBase, Partial<DrillRecording> {
   mode: "spoken";
   lines: VoiceRun["lines"];
   costUsd: number;
+  attempts?: SpokenAttempt[];
+  checkedBy?: Exclude<SpokenCheckMethod, "none">;
+  /** Why the round couldn't be scored. */
+  unchecked?: string;
+  /** Rounds checked before per-try verdicts. */
   slips?: { quote: string; better: string }[];
 }
 
@@ -79,10 +105,10 @@ export const typedCheckSchema = z.object({
 });
 
 export const spokenCheckSchema = z.object({
-  attempts: z.number().int().min(0),
-  correct: z.number().int().min(0),
+  attempts: z.array(
+    z.object({ said: z.string(), ok: z.boolean(), heard: z.string(), why: z.string() }),
+  ),
   notes: z.string(),
-  slips: z.array(z.object({ quote: z.string(), better: z.string() })),
 });
 
 export const SPOKEN_DRILL_FRAME =
@@ -94,6 +120,13 @@ const TARGET_HINTS: Partial<Record<Finding["kind"], string>> = {
   content: " (for this one, ask them to re-answer the moment with the fix)",
   pronunciation:
     " (for this one, listen to the sound itself: have them say the word alone, then in short phrases, and model it when it's off)",
+};
+
+/** One-word tries ("Lunch.") are well under the run review's minimum clip. */
+const DRILL_CLIP_OPTIONS: ClipOptions = {
+  ...DEFAULT_CLIP_OPTIONS,
+  maxTotalMs: 3 * 60_000,
+  minClipMs: 300,
 };
 
 /** Pronunciation can't be practised on paper. */
@@ -164,10 +197,23 @@ export function typedResult(check: z.infer<typeof typedCheckSchema>): DrillResul
 
 export function spokenResult(check: z.infer<typeof spokenCheckSchema>): DrillResult {
   return {
-    correct: Math.min(check.correct, check.attempts),
-    total: check.attempts,
+    correct: check.attempts.filter((a) => a.ok).length,
+    total: check.attempts.length,
     notes: check.notes,
   };
+}
+
+/** A transcript spells a word right however it was said, so sounds need the recording. */
+export function spokenCheckMethod(
+  target: DrillTarget,
+  recording: Partial<DrillRecording>,
+): SpokenCheckMethod {
+  if (target.kind !== "pronunciation") return "transcript";
+  return recording.micRecordingPath || recording.recordingPath ? "audio" : "none";
+}
+
+export function drillClips(lines: SpokenLine[], recordingOffsetMs: number): Clip[] {
+  return pickClips(lines, recordingOffsetMs, DRILL_CLIP_OPTIONS);
 }
 
 export function typedDrillPrompt(background: string, target: DrillTarget): string {
@@ -208,7 +254,7 @@ ${describeTarget(target)}
 Run about ${SPOKEN_DRILL_MINUTES} minutes of quick spoken reps on this one thing. Say in one sentence what you'll practise, then:
 - Set up short situations or questions that make them use the target naturally${TARGET_HINTS[target.kind] ?? ""}.
 - After each answer: if they slipped, say the correct version in one short sentence and ask them to say it again; if they got it right, say so in a few words and move on.
-- Vary the situations and make them a little harder as they get it right.
+- Vary the situations and make them a little harder as they get it right.${target.kind === "pronunciation" ? soundLadder(target) : ""}
 Keep your turns short so they do most of the talking. Correct only this target, not every other slip.
 Keep the reps coming until the app tells you time is nearly up, even once they get it right: don't close or call end_session before that note.`;
 }
@@ -222,12 +268,42 @@ export function spokenCheckPrompt(
 
 ${describeTarget(target)}
 
-This is the transcript of a spoken drill on that target. Count the learner's ("Candidate") attempts where the target came up, and how many of those they got right on their own (before being corrected). Give "notes": one or two sentences on how it went. List up to 3 "slips" with their words and the better version.
+This is the transcript of a spoken drill on that target. ${ATTEMPT_RULES}
 
-${formatTranscript(lines)}`;
+${formatTranscript(lines, "Coach")}`;
+}
+
+/** For the audio model: your tries as clips, judged on the target sound only. */
+export function spokenAudioCheckPrompt(
+  target: DrillTarget,
+  lines: SpokenLine[],
+  clips: Clip[],
+): string {
+  return `${describeTarget(target)}
+
+You will hear ${clips.length} clip${clips.length === 1 ? "" : "s"} of the learner in a pronunciation drill on that target, each labelled with what a speech recogniser wrote. The recogniser spells words correctly even when they were said wrong, so trust your ears:
+${clips.map((c) => `${clipLabel(c)}: "${lines[c.line]?.text.trim() ?? ""}"`).join("\n")}
+
+Judge only the target sound in "${target.quote}", not other words, the accent or the rhythm. An accent is not an error. ${ATTEMPT_RULES}
+For "heard", write what the target sounded like in plain spelling (e.g. "lanch"); leave it empty when it was right.`;
+}
+
+const ATTEMPT_RULES = `List the learner's tries in order, one entry per turn where the target came up (skip turns where it didn't). For each give "said" (their words), "ok" (whether the target was right on that try, judged on that try alone, including repeats after a correction), "heard" (what was off, empty when right) and "why" (one short sentence). The coach can be wrong: judge the learner, not the coach's reaction. Then "notes": two or three sentences on how it went and what to keep doing; they must agree with the verdicts.`;
+
+/** Small steps for a sound, and no saying the same line over and over. */
+function soundLadder(target: DrillTarget): string {
+  return `
+- Steps: the word alone; then next to a word that differs only in this sound, if there is one; then three or four different short phrases; then a short question they answer in their own words using it.
+- Never ask for the same sentence more than twice: after two good tries, move to the next step.
+- Comment only on the sound in "${target.quote}". Other words are fine as they are; don't correct them.`;
 }
 
 function describeTarget(t: DrillTarget): string {
+  if (t.kind === "pronunciation")
+    return `Practice target: ${t.habit}
+Word: "${t.quote}"
+How to say it: "${t.better}"
+${t.why}`;
   return `Practice target: ${t.habit}
 They said: "${t.quote}"
 Better: "${t.better}"

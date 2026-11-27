@@ -7,11 +7,14 @@ import { capitalize, formatUsd } from "../text";
 export function SessionBilling({
   settings,
   kind,
+  model = kind,
   maxMinutes,
   override,
 }: {
   settings: Settings;
   kind: VoiceSessionKind;
+  /** Which Settings model voices it, when not `kind`'s. */
+  model?: VoiceSessionKind;
   /** A shorter cap than Settings, as passed to the session. */
   maxMinutes?: number;
   /** This phase's interviewer manner over the preset. */
@@ -21,7 +24,7 @@ export function SessionBilling({
   const style = override?.style && override.style !== persona.style ? override.style : null;
   const limit = kind === "mock" ? settings.limits.mockMaxMinutes : settings.limits.drillMaxMinutes;
   const minutes = maxMinutes ? Math.min(maxMinutes, limit) : limit;
-  const cost = estimateSessionCostUsd(settings.models[kind], minutes);
+  const cost = estimateSessionCostUsd(settings.models[model], minutes);
   return (
     <div className="stack tight">
       <div className="cast-line">

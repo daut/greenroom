@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   canTypeDrill,
   type DrillTarget,
+  drillClips,
   drillPassed,
   drillTargets,
+  spokenAudioCheckPrompt,
+  spokenCheckMethod,
   spokenCheckPrompt,
   spokenDrillTask,
   spokenResult,
@@ -136,11 +139,12 @@ describe("drill results", () => {
     ).toEqual({ correct: 1, total: 2, notes: "ok" });
   });
 
-  it("never counts more correct spoken attempts than attempts", () => {
-    expect(spokenResult({ attempts: 3, correct: 5, notes: "", slips: [] })).toMatchObject({
-      correct: 3,
-      total: 3,
-    });
+  it("counts spoken tries from the per-try verdicts, so the score matches the breakdown", () => {
+    const tryAt = (ok: boolean) => ({ said: "Lunch.", ok, heard: "", why: "" });
+
+    expect(
+      spokenResult({ attempts: [tryAt(true), tryAt(false), tryAt(true)], notes: "ok" }),
+    ).toEqual({ correct: 2, total: 3, notes: "ok" });
   });
 
   it("passes at 80% and never on zero attempts", () => {
@@ -188,16 +192,58 @@ describe("drill prompts", () => {
     ]);
 
     expect(prompt).toContain("Candidate: What would it look like?");
+    expect(prompt).toContain("Coach: Ask me about the design.");
     expect(prompt).toContain("how … like in questions");
+  });
+
+  it("judges each try itself rather than trusting the coach's reaction", () => {
+    expect(spokenCheckPrompt("bg", target, [])).toMatch(/coach can be wrong/i);
   });
 });
 
 describe("pronunciation targets", () => {
-  const sound: DrillTarget = { ...target, kind: "pronunciation", habit: "th said as t" };
+  const sound: DrillTarget = {
+    ...target,
+    kind: "pronunciation",
+    habit: "unclear vowel",
+    quote: "lunch",
+    better: "lunch",
+    why: 'Sounded like "lanch". Keep a short "uh".',
+  };
+  const lines = [
+    { speaker: "interviewer" as const, text: "Say lunch.", startMs: 0, endMs: 900 },
+    { speaker: "you" as const, text: "Lunch.", startMs: 2000, endMs: 2800 },
+  ];
 
   it("are practised out loud only, with the sound itself in focus", () => {
     expect(canTypeDrill(sound)).toBe(false);
     expect(canTypeDrill(target)).toBe(true);
     expect(spokenDrillTask("", sound)).toContain("say the word alone");
+  });
+
+  it("move on instead of asking for the same sentence again and again", () => {
+    expect(spokenDrillTask("", sound)).toMatch(/same (sentence|phrase) more than twice/i);
+  });
+
+  it("keep the coach on the target word only", () => {
+    expect(spokenDrillTask("", sound)).toMatch(/only on the sound in "lunch"/i);
+  });
+
+  it("are checked by ear when your side was recorded, and not at all otherwise", () => {
+    expect(spokenCheckMethod(sound, { micRecordingPath: "/r/a.mic.webm" })).toBe("audio");
+    expect(spokenCheckMethod(sound, { recordingPath: null })).toBe("none");
+    expect(spokenCheckMethod(target, { micRecordingPath: "/r/a.mic.webm" })).toBe("transcript");
+  });
+
+  it("keep one-word tries, which are too short for the run review", () => {
+    expect(drillClips(lines, 0).map((c) => c.line)).toEqual([1]);
+  });
+
+  it("send the audio model each try with what was heard before", () => {
+    const prompt = spokenAudioCheckPrompt(sound, lines, drillClips(lines, 0));
+
+    expect(prompt).toContain('Clip #2: "Lunch."');
+    expect(prompt).toContain('Sounded like "lanch"');
+    expect(prompt).toMatch(/only the target/i);
   });
 });

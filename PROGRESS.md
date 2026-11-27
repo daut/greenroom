@@ -75,6 +75,8 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo · `[!]` blocked / needs i
 - [!] Confirm the interviewer now hangs up by itself (newest `recordings/logs/*.jsonl` should show a `function_call` in the last `response.done`)
 - [x] Drills can't be hung up early: the mini model called `end_session` 4–30 s into 3-min drills (Nov 27 logs). Before the "time nearly up" note the app answers the call with "not ended, carry on" and asks for the next turn; drill task and tool description say the same. Coaching calls drop the interviewer persona
 - [!] Early-end guard untested live: a drill log should show a `function_call_output` after an early `end_session`, and the coach carrying on
+- [x] Pronunciation drills (Nov 27 "lunch" log: the mini coach answered 4 of 8 turns with two messages, made up replies, asked for one sentence 5 times, and "corrected" have → "huhv"; scored 2/7 from text that can't show sound). They now use the mock model, record your side (if Recording is on), and are scored by `gpt-audio` per try. Without a recording they're "Not scored" instead of guessed. Every spoken round stores per-try verdicts; the score is counted from them. The coach says one message per turn, never asks for the same sentence more than twice, and comments only on the target sound
+- [!] Pronunciation drill untested live: check the log has one message per `response.done` and that the round shows per-try verdicts "checked by ear"
 - [x] Voice preview in Interviewer settings (short receive-only Realtime session; OpenAI TTS models shut down Jan 2027)
 
 ### M2 — Training engine

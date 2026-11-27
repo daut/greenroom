@@ -9,6 +9,8 @@ export type VoiceSessionKind = "drill" | "mock";
 
 export interface VoiceCallRequest {
   kind: VoiceSessionKind;
+  /** Which Settings model voices it, when not `kind`'s (a pronunciation drill needs sharper ears). */
+  model?: VoiceSessionKind;
   sdp: string;
   /** What the interviewer should do this session. */
   task: string;

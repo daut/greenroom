@@ -1,4 +1,6 @@
+import type { VoiceSessionKind } from "@shared/api";
 import { estimateSessionCostUsd } from "@shared/billing";
+import type { DrillRecording } from "@shared/drills";
 import type { Settings } from "@shared/settings";
 import type { VoiceRun } from "@shared/training";
 import { useEffect, useRef, useState } from "react";
@@ -7,14 +9,14 @@ import { SessionBilling } from "../voice/SessionBilling";
 import { RunningTime, Transcript } from "../voice/SessionPanel";
 import { useVoiceSession } from "../voice/useVoiceSession";
 
-export interface CoachCallResult {
+export interface CoachCallResult extends DrillRecording {
   lines: VoiceRun["lines"];
   costUsd: number;
 }
 
 /**
- * A short spoken session with a coaching voice (it may explain and correct). Not recorded;
- * the transcript is handed back when it ends.
+ * A short spoken session with a coaching voice (it may explain and correct). Not recorded
+ * unless `recordYou`; the transcript is handed back when it ends.
  */
 export function CoachCall({
   label,
@@ -26,6 +28,8 @@ export function CoachCall({
   teaser,
   intro,
   onLiveChange,
+  model,
+  recordYou = false,
 }: {
   /** Shown above the controls once expanded. */
   intro?: string;
@@ -40,6 +44,10 @@ export function CoachCall({
   /** The coach keeps going until time is nearly up instead of ending when it sees fit. */
   fullLength?: boolean;
   onFinished: (result: CoachCallResult) => void;
+  /** Which Settings model voices it; defaults to the drill model. */
+  model?: VoiceSessionKind;
+  /** Keep a recording (if Settings → Audio allows) so the sound can be checked. */
+  recordYou?: boolean;
 }) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const voice = useVoiceSession(settings?.audio ?? null);
@@ -55,7 +63,7 @@ export function CoachCall({
       handled.current = true;
       const { voice: v, onFinished: finish } = latest.current;
       const lines = keptLines(v.transcript.lines);
-      if (lines.length) finish({ lines, costUsd: v.transcript.costUsd });
+      if (lines.length) finish({ lines, ...resultOf(v) });
     },
     [],
   );
@@ -69,8 +77,10 @@ export function CoachCall({
     if (!finished || handled.current) return;
     handled.current = true;
     const lines = keptLines(voice.transcript.lines);
-    if (lines.length) onFinished({ lines, costUsd: voice.transcript.costUsd });
+    if (lines.length) onFinished({ lines, ...resultOf(voice) });
   }, [voice, onFinished]);
+
+  const recorded = recordYou && settings?.audio.recordSessions === true;
 
   const start = () => {
     handled.current = false;
@@ -79,7 +89,8 @@ export function CoachCall({
       coach: true,
       maxMinutes,
       fullLength,
-      record: false,
+      record: recorded,
+      model,
     });
   };
 
@@ -100,7 +111,7 @@ export function CoachCall({
         onClick={() => setExpanded(true)}
       >
         {teaser}
-        {settings ? ` · ${callSummary(settings, maxMinutes)}` : ""}
+        {settings ? ` · ${callSummary(settings, maxMinutes, model)}` : ""}
       </button>
     );
   }
@@ -109,7 +120,7 @@ export function CoachCall({
     <div className="stack tight">
       {intro && <p className="hint">{intro}</p>}
       {settings && !live && (
-        <SessionBilling settings={settings} kind="drill" maxMinutes={maxMinutes} />
+        <SessionBilling settings={settings} kind="drill" model={model} maxMinutes={maxMinutes} />
       )}
       <div className="session-controls">
         {voice.status === "live" ? (
@@ -126,7 +137,10 @@ export function CoachCall({
           </button>
         )}
         {voice.status === "live" && <span className="stamp live">Live</span>}
-        <span className="hint">Wear headphones. Not recorded.</span>
+        <span className="hint">
+          Wear headphones.{" "}
+          {recorded ? "Your side is recorded to check the sound." : "Not recorded."}
+        </span>
       </div>
       {voice.error && (
         <p className="warn-text" role="alert">
@@ -160,8 +174,21 @@ function keptLines(lines: ReturnType<typeof useVoiceSession>["transcript"]["line
     .map(({ speaker, text, startMs, endMs }) => ({ speaker, text, startMs, endMs }));
 }
 
-function callSummary(settings: Settings, maxMinutes: number | undefined): string {
+function resultOf(voice: ReturnType<typeof useVoiceSession>): Omit<CoachCallResult, "lines"> {
+  return {
+    costUsd: voice.transcript.costUsd,
+    recordingPath: voice.recordingPath,
+    micRecordingPath: voice.micRecordingPath,
+    recordingOffsetMs: voice.recordingOffsetMs,
+  };
+}
+
+function callSummary(
+  settings: Settings,
+  maxMinutes: number | undefined,
+  model: VoiceSessionKind = "drill",
+): string {
   const minutes = Math.min(maxMinutes ?? Infinity, settings.limits.drillMaxMinutes);
-  const cost = estimateSessionCostUsd(settings.models.drill, minutes);
+  const cost = estimateSessionCostUsd(settings.models[model], minutes);
   return `up to ${minutes} min${cost === null ? "" : `, about ${formatUsd(cost)}`}`;
 }

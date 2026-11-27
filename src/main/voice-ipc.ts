@@ -41,7 +41,8 @@ export function registerVoiceIpc({ settingsStore, keyStore, ledger, recordingsDi
     await ensureMicrophoneAccess();
 
     const settings = settingsStore.load();
-    const model = settings.models[request.kind];
+    const voicedBy = request.model === "drill" || request.model === "mock" ? request.model : null;
+    const model = settings.models[voicedBy ?? request.kind];
     const preset = withPersonaOverride(activePersona(settings), request.persona);
     const persona = request.voice ? { ...preset, voice: request.voice } : preset;
     const limit =

@@ -20,6 +20,8 @@ const INTERVIEW_FRAME =
 const NO_COACHING = "Do not coach, grade, or give feedback during the session. Stay in character.";
 const COACHING =
   "You are coaching: explain, correct and encourage as the task says, briefly and kindly. Speak slowly enough for a learner.";
+const ONE_TURN =
+  "Say one message per turn, then stop and wait for the user to answer. Never speak for the user or react to an answer they haven't given.";
 
 export function interviewerInstructions(
   persona: Persona,
@@ -50,7 +52,7 @@ function interviewerStyle(persona: Persona): string[] {
 
 /** A coach isn't the interviewer: only the persona's language carries over. */
 function coachingStyle(persona: Persona): string[] {
-  return [`Speak only ${persona.language}. Keep each turn short.`, COACHING];
+  return [`Speak only ${persona.language}. Keep each turn short.`, COACHING, ONE_TURN];
 }
 
 /** What the voice reads when the user shares their scratchpad mid-call. */

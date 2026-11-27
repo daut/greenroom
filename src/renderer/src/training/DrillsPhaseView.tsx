@@ -3,11 +3,12 @@ import {
   coachPhase,
   type DrillEntry,
   type DrillTarget,
-  drillPassed,
   drillTargets,
   SPOKEN_DRILL_FRAME,
   SPOKEN_DRILL_MINUTES,
+  type SpokenCheckMethod,
   type SpokenDrill,
+  spokenCheckMethod,
   spokenCheckPrompt,
   spokenCheckSchema,
   spokenDrillTask,
@@ -29,13 +30,21 @@ import {
   type TrainingSession,
 } from "@shared/training";
 import { useState } from "react";
+import type { z } from "zod";
 import { dateTime, errorMessage } from "../text";
 import { askStructured } from "./ask";
 import { CoachCall, type CoachCallResult } from "./CoachCall";
+import { checkDrillByEar } from "./pronunciation";
+import { ScoreStamp, SpokenRound } from "./SpokenRound";
 import { useAllSessions } from "./useAllSessions";
 import type { UpdateSession } from "./useTrainingSession";
 
 type Change = (entries: DrillEntry[]) => DrillEntry[];
+type SpokenCheck = z.infer<typeof spokenCheckSchema>;
+
+const NOT_RECORDED =
+  "Not scored: a transcript spells the word right however it sounded. Turn on Record sessions in Settings → Audio to have pronunciation drills checked by ear.";
+const REVIEW_OFF = "Not scored: the pronunciation review is off (Settings → Audio).";
 
 export function DrillsPhaseView({
   def,
@@ -129,6 +138,7 @@ function TargetPanel({
   const typed = entries.filter((e): e is TypedDrill => e.mode === "typed");
   const current = typed.at(-1);
   const rounds = entries.filter((e) => e.result || e.mode === "spoken");
+  const bySound = target.kind === "pronunciation";
 
   const run = async (kind: NonNullable<typeof busy>, task: () => Promise<void>) => {
     setBusy(kind);
@@ -172,14 +182,13 @@ function TargetPanel({
       patch(drill.id, { answers, feedback: reply.results, result: typedResult(reply) });
     });
 
-  const spoke = ({ lines, costUsd }: CoachCallResult) => {
+  const spoke = (call: CoachCallResult) => {
     const entry: SpokenDrill = {
       id: crypto.randomUUID(),
       mode: "spoken",
       habit: target.habit,
       at: new Date().toISOString(),
-      lines,
-      costUsd,
+      ...call,
     };
     change((list) => [...list, entry]);
     checkSpoken(entry);
@@ -187,14 +196,24 @@ function TargetPanel({
 
   const checkSpoken = (entry: SpokenDrill) =>
     void run("listening", async () => {
+      const method = spokenCheckMethod(target, entry);
+      if (method === "none") return patch(entry.id, { unchecked: NOT_RECORDED });
+      if (method === "audio") return checkByEar(entry);
       const reply = await askStructured(
         "score",
         system,
         spokenCheckPrompt(background, target, entry.lines),
         spokenCheckSchema,
       );
-      patch(entry.id, { result: spokenResult(reply), slips: reply.slips });
+      patch(entry.id, scored(reply, "transcript"));
     });
+
+  const checkByEar = async (entry: SpokenDrill) => {
+    const settings = await window.greenroom.settings.get();
+    if (!settings.audio.pronunciationReview) return patch(entry.id, { unchecked: REVIEW_OFF });
+    const heard = await checkDrillByEar(entry, target);
+    patch(entry.id, heard.ok ? scored(heard.reply, "audio") : { unchecked: heard.reason });
+  };
 
   const patch = (id: string, fields: Partial<TypedDrill> | Partial<SpokenDrill>) =>
     change((list) => list.map((e) => (e.id === id ? ({ ...e, ...fields } as DrillEntry) : e)));
@@ -238,6 +257,8 @@ function TargetPanel({
           label="Start spoken reps"
           frame={SPOKEN_DRILL_FRAME}
           maxMinutes={SPOKEN_DRILL_MINUTES}
+          model={bySound ? "mock" : "drill"}
+          recordYou={bySound}
           fullLength
           task={() => spokenDrillTask(background, target)}
           intro="Quick spoken reps: the coach corrects you on the spot and has you say it again."
@@ -256,44 +277,33 @@ function TargetPanel({
         <div className="stack tight">
           <h3 className="label">Your rounds</h3>
           <ol className="script">
-            {[...rounds].reverse().map((e) => (
-              <li key={e.id}>
-                <span className="script-speaker">
-                  {dateTime(e.at)}
-                  {e.result ? (
-                    <span className={drillPassed(e.result) ? "stamp ok" : "stamp"}>
-                      {e.result.correct}/{e.result.total}
-                    </span>
-                  ) : (
-                    <span className="stamp pending">Unchecked</span>
-                  )}
-                </span>
-                <span className="script-text">
-                  {e.mode === "typed" ? "Typed" : "Spoken"}: {e.result?.notes}
-                  {e.mode === "spoken" && !e.result && (
-                    <button
-                      type="button"
-                      className="link"
-                      disabled={busy !== null}
-                      onClick={() => checkSpoken(e)}
-                    >
-                      {busy === "listening" ? "Checking" : "Check this round"}
-                    </button>
-                  )}
-                  {e.mode === "spoken" &&
-                    e.slips?.map((s) => (
-                      <span key={s.quote} className="item-detail">
-                        “{s.quote}” → {s.better}
-                      </span>
-                    ))}
-                </span>
-              </li>
-            ))}
+            {[...rounds].reverse().map((e) =>
+              e.mode === "spoken" ? (
+                <SpokenRound key={e.id} drill={e} busy={busy} onCheck={() => checkSpoken(e)} />
+              ) : (
+                <li key={e.id}>
+                  <span className="script-speaker">
+                    {dateTime(e.at)}
+                    {e.result && <ScoreStamp result={e.result} />}
+                  </span>
+                  <span className="script-text">Typed: {e.result?.notes}</span>
+                </li>
+              ),
+            )}
           </ol>
         </div>
       )}
     </div>
   );
+}
+
+function scored(check: SpokenCheck, by: Exclude<SpokenCheckMethod, "none">): Partial<SpokenDrill> {
+  return {
+    result: spokenResult(check),
+    attempts: check.attempts,
+    checkedBy: by,
+    unchecked: undefined,
+  };
 }
 
 /** One round of written exercises; read-only once checked. */
@@ -373,12 +383,7 @@ function TargetStamp({
   if (habit?.status === "improving") return <span className="stamp ok">Improving</span>;
   const rounds = entries.filter((e) => e.result && habitKey(e.habit) === target.key);
   const last = rounds.at(-1)?.result;
-  if (last)
-    return (
-      <span
-        className={drillPassed(last) ? "stamp ok" : "stamp"}
-      >{`${last.correct}/${last.total}`}</span>
-    );
+  if (last) return <ScoreStamp result={last} />;
   if (target.focus) return <span className="stamp">Focus</span>;
   if (target.earlier) return <span className="stamp pending">Earlier</span>;
   return <span />;

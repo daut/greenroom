@@ -118,6 +118,8 @@ export interface StartOptions {
   fullLength?: boolean;
   /** Defaults to the Settings → Audio choice; coaching calls aren't kept. */
   record?: boolean;
+  /** Which Settings model voices it, when not the session kind's. */
+  model?: VoiceSessionKind;
 }
 
 interface SavedRecordings {
@@ -153,6 +155,7 @@ async function openSession({
   persona,
   fullLength = false,
   record = audio.recordSessions,
+  model: voicedBy,
 }: OpenOptions): Promise<LiveSession> {
   const mic = await navigator.mediaDevices.getUserMedia({
     audio: {
@@ -257,6 +260,7 @@ async function openSession({
   try {
     call = await window.greenroom.voice.connect({
       kind,
+      model: voicedBy,
       sdp: offer.sdp ?? "",
       task,
       frame,

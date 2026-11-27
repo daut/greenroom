@@ -46,10 +46,11 @@ export interface PronunciationReview {
   costUsd: number;
 }
 
+/** What an audio model said about some clips, or why it wasn't asked. */
+export type AudioCheck<T> = { ok: true; reply: T; costUsd: number } | { ok: false; reason: string };
+
 /** The review's outcome when scoring: a reply, or why there is none. */
-export type AudioReview =
-  | { ok: true; reply: PronunciationReply; costUsd: number }
-  | { ok: false; reason: string };
+export type AudioReview = AudioCheck<PronunciationReply>;
 
 export function pronunciationPrompt(lines: SpokenLine[], clips: Clip[], context: string): string {
   return `Context: ${context}.

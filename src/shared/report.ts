@@ -200,11 +200,11 @@ export function wantsAudioReview(rubric: RubricCriterion[]): boolean {
 }
 
 /** Numbered so findings can point back at a line: `#3 [0:17] Candidate: …`. */
-export function formatTranscript(lines: SpokenLine[]): string {
+export function formatTranscript(lines: SpokenLine[], them = "Interviewer"): string {
   return lines
     .map((l, i) =>
       l.text.trim()
-        ? `#${i + 1} [${clock(l.startMs)}] ${l.speaker === "you" ? "Candidate" : "Interviewer"}: ${l.text}`
+        ? `#${i + 1} [${clock(l.startMs)}] ${l.speaker === "you" ? "Candidate" : them}: ${l.text}`
         : null,
     )
     .filter((l) => l !== null)
