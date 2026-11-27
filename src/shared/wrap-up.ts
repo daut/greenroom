@@ -48,6 +48,15 @@ export function nextWrapUpStep({
   return "none";
 }
 
+/** A full-length session (a drill) may end only once the voice has been told time is nearly up. */
+export function mayEndSession(fullLength: boolean, done: WrapUpDone): boolean {
+  return !fullLength || done.warned;
+}
+
+/** The voice's answer when it tries to end a full-length session too early. */
+export const KEEP_GOING_NOTE =
+  "Not ended: there is still time left. Don't say goodbye or wrap up; carry on with the task. The app will tell you when time is nearly up.";
+
 /** Heads-up ahead of the limit: 15% of the session, one to three minutes. */
 export function leadMs(limitMs: number): number {
   return clamp(limitMs * 0.15, MIN, 3 * MIN);

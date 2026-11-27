@@ -73,6 +73,8 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo · `[!]` blocked / needs i
 - [!] Noise gate untested live: check a new log for `conversation.item.delete` after noise, and that `output_audio_buffer.clear` is followed by `conversation.item.truncated`
 - [x] Sound check retested by user: no double replies. The mini model said goodbye but never called `end_session`; instructions now insist on the call in the same response
 - [!] Confirm the interviewer now hangs up by itself (newest `recordings/logs/*.jsonl` should show a `function_call` in the last `response.done`)
+- [x] Drills can't be hung up early: the mini model called `end_session` 4–30 s into 3-min drills (Nov 27 logs). Before the "time nearly up" note the app answers the call with "not ended, carry on" and asks for the next turn; drill task and tool description say the same. Coaching calls drop the interviewer persona
+- [!] Early-end guard untested live: a drill log should show a `function_call_output` after an early `end_session`, and the coach carrying on
 - [x] Voice preview in Interviewer settings (short receive-only Realtime session; OpenAI TTS models shut down Jan 2027)
 
 ### M2 — Training engine

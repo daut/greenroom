@@ -21,6 +21,7 @@ export function CoachCall({
   frame,
   task,
   maxMinutes,
+  fullLength,
   onFinished,
   teaser,
   intro,
@@ -36,6 +37,8 @@ export function CoachCall({
   frame: string;
   task: () => string;
   maxMinutes?: number;
+  /** The coach keeps going until time is nearly up instead of ending when it sees fit. */
+  fullLength?: boolean;
   onFinished: (result: CoachCallResult) => void;
 }) {
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -71,7 +74,13 @@ export function CoachCall({
 
   const start = () => {
     handled.current = false;
-    void voice.start("drill", task(), { frame, coach: true, maxMinutes, record: false });
+    void voice.start("drill", task(), {
+      frame,
+      coach: true,
+      maxMinutes,
+      fullLength,
+      record: false,
+    });
   };
 
   const live =

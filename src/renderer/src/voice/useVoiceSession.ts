@@ -1,8 +1,16 @@
 import type { VoiceSessionKind } from "@shared/api";
 import { sharedScratchpad } from "@shared/interviewer";
+import { END_SESSION_TOOL } from "@shared/realtime";
 import type { PersonaOverride, Settings } from "@shared/settings";
 import { emptyTranscript, reduceEvent, type TranscriptState } from "@shared/transcript";
-import { nextWrapUpStep, type WrapUpDone, type WrapUpStep, wrapUpNote } from "@shared/wrap-up";
+import {
+  KEEP_GOING_NOTE,
+  mayEndSession,
+  nextWrapUpStep,
+  type WrapUpDone,
+  type WrapUpStep,
+  wrapUpNote,
+} from "@shared/wrap-up";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { errorMessage } from "../text";
 import { startRecorder } from "./recorder";
@@ -106,6 +114,8 @@ export interface StartOptions {
   coach?: boolean;
   maxMinutes?: number;
   persona?: PersonaOverride;
+  /** The voice may not end the session before the "time nearly up" note (drills). */
+  fullLength?: boolean;
   /** Defaults to the Settings → Audio choice; coaching calls aren't kept. */
   record?: boolean;
 }
@@ -141,6 +151,7 @@ async function openSession({
   coach,
   maxMinutes,
   persona,
+  fullLength = false,
   record = audio.recordSessions,
 }: OpenOptions): Promise<LiveSession> {
   const mic = await navigator.mediaDevices.getUserMedia({
@@ -171,6 +182,7 @@ async function openSession({
   let model = "";
   let transcript = emptyTranscript();
   const gate = createTurnGate({ active: !listenFirst });
+  const wrapUp: WrapUpDone = { warned: false, timeUp: false, prompted: false };
   const eventLog: string[] = [];
   events.addEventListener("message", ({ data }) => {
     const at = performance.now() - startedAt;
@@ -178,11 +190,27 @@ async function openSession({
     eventLog.push(JSON.stringify({ at: Math.round(at), event: redactAudio(event) }));
     const wasEnding = transcript.endRequested;
     transcript = reduceEvent(transcript, event, { at, model });
+    const endsTooEarly =
+      transcript.endRequested && !wasEnding && !mayEndSession(fullLength, wrapUp);
+    if (endsTooEarly) transcript = { ...transcript, endRequested: false };
     onState(() => ({ transcript }));
     sendAll(gate.onEvent(event, at));
+    if (endsTooEarly) keepGoing(event);
     if (transcript.endRequested && !wasEnding) stopListening();
     if (transcript.endRequested) hangUpAfterGoodbye();
   });
+
+  /** Answers a premature `end_session` with "not yet" and asks for the next turn. */
+  function keepGoing(event: unknown) {
+    const callId = endSessionCallId(event);
+    if (callId) {
+      send({
+        type: "conversation.item.create",
+        item: { type: "function_call_output", call_id: callId, output: KEEP_GOING_NOTE },
+      });
+    }
+    sendAll(gate.reply());
+  }
 
   /** After the goodbye, nothing the mic picks up may start another reply. */
   function stopListening() {
@@ -248,7 +276,6 @@ async function openSession({
   const recordingOffsetMs = performance.now() - startedAt;
   onState(() => ({ recordingOffsetMs }));
   const limitMs = call.maxMinutes * 60_000;
-  const wrapUp: WrapUpDone = { warned: false, timeUp: false, prompted: false };
   let listening = listenFirst === true;
   let quietSince = performance.now();
   const ticker = setInterval(() => {
@@ -353,6 +380,12 @@ function redactAudio(event: unknown): unknown {
     ...(audio ? { audio: "…" } : {}),
     ...(delta ? { delta: isAudio ? "…" : delta } : {}),
   };
+}
+
+function endSessionCallId(event: unknown): string | undefined {
+  const output = (event as { response?: { output?: { name?: string; call_id?: string }[] } })
+    ?.response?.output;
+  return output?.find((o) => o.name === END_SESSION_TOOL)?.call_id;
 }
 
 function isBusy(t: TranscriptState): boolean {

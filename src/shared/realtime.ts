@@ -58,7 +58,7 @@ export function buildRealtimeSession({ model, persona, instructions }: RealtimeS
         type: "function" as const,
         name: END_SESSION_TOOL,
         description:
-          "End the session. Call this right after your closing sentence, once the task is complete.",
+          "End the session and hang up. Call this only right after your closing sentence, once the whole task is complete; never at the start or between turns.",
         parameters: { type: "object", properties: {} },
       },
     ],

@@ -238,6 +238,7 @@ function TargetPanel({
           label="Start spoken reps"
           frame={SPOKEN_DRILL_FRAME}
           maxMinutes={SPOKEN_DRILL_MINUTES}
+          fullLength
           task={() => spokenDrillTask(background, target)}
           intro="Quick spoken reps: the coach corrects you on the spot and has you say it again."
           onFinished={spoke}

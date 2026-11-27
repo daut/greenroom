@@ -34,6 +34,15 @@ describe("interviewerInstructions", () => {
     expect(text).toMatch(/you are coaching/i);
   });
 
+  it("doesn't cast a coach as the interviewer persona, but keeps its language", () => {
+    const text = interviewerInstructions({ ...persona, language: "German" }, "x", "Coach.", {
+      coach: true,
+    });
+
+    expect(text).not.toMatch(/interviewer/i);
+    expect(text).toContain("Speak only German");
+  });
+
   it("tells the interviewer to end the session when the task is done", () => {
     expect(interviewerInstructions(persona, "x")).toContain("call end_session");
   });

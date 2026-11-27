@@ -209,7 +209,8 @@ Run about ${SPOKEN_DRILL_MINUTES} minutes of quick spoken reps on this one thing
 - Set up short situations or questions that make them use the target naturally${TARGET_HINTS[target.kind] ?? ""}.
 - After each answer: if they slipped, say the correct version in one short sentence and ask them to say it again; if they got it right, say so in a few words and move on.
 - Vary the situations and make them a little harder as they get it right.
-Keep your turns short so they do most of the talking. Correct only this target, not every other slip.`;
+Keep your turns short so they do most of the talking. Correct only this target, not every other slip.
+Keep the reps coming until the app tells you time is nearly up, even once they get it right: don't close or call end_session before that note.`;
 }
 
 export function spokenCheckPrompt(

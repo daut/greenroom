@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { graceMs, leadMs, nextWrapUpStep, type WrapUpInput } from "./wrap-up";
+import { graceMs, leadMs, mayEndSession, nextWrapUpStep, type WrapUpInput } from "./wrap-up";
 
 const MIN = 60_000;
 const LIMIT = 30 * MIN;
@@ -79,5 +79,18 @@ describe("nextWrapUpStep", () => {
     const done = { warned: true, timeUp: true, prompted: true };
     const elapsedMs = LIMIT + graceMs(LIMIT) + MIN;
     expect(nextWrapUpStep(input({ elapsedMs, youSpeaking: true, done }))).toBe("hang-up");
+  });
+});
+
+describe("mayEndSession", () => {
+  const fresh = { warned: false, timeUp: false, prompted: false };
+
+  it("keeps a drill going until the voice has been warned time is nearly up", () => {
+    expect(mayEndSession(true, fresh)).toBe(false);
+    expect(mayEndSession(true, { ...fresh, warned: true })).toBe(true);
+  });
+
+  it("lets other sessions end whenever the voice is done", () => {
+    expect(mayEndSession(false, fresh)).toBe(true);
   });
 });

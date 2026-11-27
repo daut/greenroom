@@ -29,16 +29,27 @@ export function interviewerInstructions(
 ): string {
   return [
     frame,
-    `Persona: ${describePersona(persona)}`,
-    `Tone: ${TONE[persona.style]}`,
-    `Turn-taking: ${INTERRUPTIONS[persona.interruptions]}`,
+    ...(coach ? coachingStyle(persona) : interviewerStyle(persona)),
     "If the user cut you off, pick up naturally from what they said; don't restate your whole question.",
-    `Speak only ${persona.language}. Keep each turn short, like a real interviewer: one question at a time.`,
-    coach ? COACHING : NO_COACHING,
     `Task: ${task}`,
     "When the task is complete, say one short closing sentence, then call end_session in that same response. Never call it earlier.",
     "Saying goodbye without calling end_session leaves the user stuck in the session, so always make the call after your closing sentence.",
   ].join("\n");
+}
+
+function interviewerStyle(persona: Persona): string[] {
+  return [
+    `Persona: ${describePersona(persona)}`,
+    `Tone: ${TONE[persona.style]}`,
+    `Turn-taking: ${INTERRUPTIONS[persona.interruptions]}`,
+    `Speak only ${persona.language}. Keep each turn short, like a real interviewer: one question at a time.`,
+    NO_COACHING,
+  ];
+}
+
+/** A coach isn't the interviewer: only the persona's language carries over. */
+function coachingStyle(persona: Persona): string[] {
+  return [`Speak only ${persona.language}. Keep each turn short.`, COACHING];
 }
 
 /** What the voice reads when the user shares their scratchpad mid-call. */
