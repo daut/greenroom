@@ -54,7 +54,6 @@ export function registerVoiceIpc({ settingsStore, keyStore, ledger, recordingsDi
       instructions: interviewerInstructions(persona, task, request.frame, {
         coach: request.coach === true,
       }),
-      listenFirst: request.listenFirst === true,
     });
     const sdp = await createRealtimeCall({
       sdp: request.sdp,

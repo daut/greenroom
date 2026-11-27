@@ -14,8 +14,6 @@ export interface VoiceCallRequest {
   task: string;
   /** Who the voice plays; defaults to a job interviewer. */
   frame?: string;
-  /** Listen without replying until handed over. */
-  listenFirst?: boolean;
   /** Use this voice instead of the active preset's (voice preview). */
   voice?: string;
   /** The voice may explain and correct (discussions, drills) instead of staying in character. */

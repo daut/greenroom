@@ -54,27 +54,13 @@ describe("buildRealtimeSession", () => {
   });
 });
 
-describe("listen-first sessions", () => {
-  it("don't auto-reply while the user presents", () => {
-    const session = buildRealtimeSession({
-      model: "m",
-      persona,
-      instructions: "",
-      listenFirst: true,
-    });
+describe("turn-taking", () => {
+  it("leaves replies and interruptions to the app, so noise can be filtered first", () => {
+    const session = buildRealtimeSession({ model: "m", persona, instructions: "" });
 
     expect(session.audio.input.turn_detection).toMatchObject({
       create_response: false,
       interrupt_response: false,
-    });
-  });
-
-  it("reply normally by default", () => {
-    const session = buildRealtimeSession({ model: "m", persona, instructions: "" });
-
-    expect(session.audio.input.turn_detection).toMatchObject({
-      create_response: true,
-      interrupt_response: true,
     });
   });
 });

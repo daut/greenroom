@@ -101,7 +101,10 @@ export function reduceEvent(
     case "output_audio_buffer.stopped":
     case "output_audio_buffer.cleared":
       return { ...state, interviewerAudio: false };
+    case "conversation.item.deleted":
+      return remove(state, event.item_id);
     case "error":
+      if (event.error?.code === CANCEL_RACE) return state;
       return { ...state, error: event.error?.message ?? "Unknown error" };
     default:
       return state;
@@ -127,8 +130,12 @@ type RealtimeEvent =
   | { type: "output_audio_buffer.started" }
   | { type: "output_audio_buffer.stopped" }
   | { type: "output_audio_buffer.cleared" }
-  | { type: "error"; error?: { message?: string } }
+  | { type: "conversation.item.deleted"; item_id: string }
+  | { type: "error"; error?: { code?: string; message?: string } }
   | { type: "other" };
+
+/** The turn gate cancelled a response that had just finished. Harmless. */
+const CANCEL_RACE = "response_cancel_not_active";
 
 function callsEndSession(output: { type?: string; name?: string }[] | undefined): boolean {
   return (output ?? []).some((o) => o.type === "function_call" && o.name === END_SESSION_TOOL);

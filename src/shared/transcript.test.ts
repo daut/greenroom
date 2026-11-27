@@ -155,6 +155,23 @@ describe("reduceEvent", () => {
     expect(state.lines).toEqual([]);
   });
 
+  it("drops lines the app deleted from the conversation (a reply to noise)", () => {
+    const state = run([
+      [1, { type: "response.output_audio_transcript.delta", item_id: "a1", delta: "Okay, " }],
+      [2, { type: "conversation.item.deleted", item_id: "a1" }],
+    ]);
+
+    expect(state.lines).toEqual([]);
+  });
+
+  it("doesn't report a cancel that lost the race with the response finishing", () => {
+    const state = run([
+      [1, { type: "error", error: { code: "response_cancel_not_active", message: "x" } }],
+    ]);
+
+    expect(state.error).toBeNull();
+  });
+
   it("knows whether the interviewer has started any response", () => {
     expect(run([]).responded).toBe(false);
     expect(run([[1, { type: "response.created", response: {} }]]).responded).toBe(true);

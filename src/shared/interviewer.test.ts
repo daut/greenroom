@@ -38,6 +38,10 @@ describe("interviewerInstructions", () => {
     expect(interviewerInstructions(persona, "x")).toContain("call end_session");
   });
 
+  it("tells the interviewer to pick up after being cut off rather than restate", () => {
+    expect(interviewerInstructions(persona, "x")).toMatch(/cut you off.*don't restate/i);
+  });
+
   it("tells a non-interrupting interviewer to wait", () => {
     expect(interviewerInstructions({ ...persona, interruptions: "none" }, "x")).toMatch(
       /never interrupt/i,

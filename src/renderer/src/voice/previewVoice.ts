@@ -46,7 +46,6 @@ export async function previewVoice(voice: string, line: string): Promise<void> {
       kind: "drill",
       sdp: offer.sdp ?? "",
       task: "Voice preview: speak the requested line once.",
-      listenFirst: true,
       voice,
     });
     await pc.setRemoteDescription({ type: "answer", sdp: call.sdp });

@@ -31,16 +31,9 @@ export interface RealtimeSessionInput {
   model: string;
   persona: Persona;
   instructions: string;
-  /** Listen without replying until the app hands over (e.g. a presentation before Q&A). */
-  listenFirst?: boolean;
 }
 
-export function buildRealtimeSession({
-  model,
-  persona,
-  instructions,
-  listenFirst = false,
-}: RealtimeSessionInput) {
+export function buildRealtimeSession({ model, persona, instructions }: RealtimeSessionInput) {
   return {
     type: "realtime" as const,
     model,
@@ -51,8 +44,9 @@ export function buildRealtimeSession({
         turn_detection: {
           type: "semantic_vad" as const,
           eagerness: EAGERNESS[persona.interruptions],
-          create_response: !listenFirst,
-          interrupt_response: !listenFirst,
+          // The renderer's turn gate replies and interrupts, after filtering out noise.
+          create_response: false,
+          interrupt_response: false,
         },
         transcription: { model: TRANSCRIPTION_MODEL },
         noise_reduction: { type: "near_field" as const },

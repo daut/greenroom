@@ -6,6 +6,7 @@ import { nextWrapUpStep, type WrapUpDone, type WrapUpStep, wrapUpNote } from "@s
 import { useCallback, useEffect, useRef, useState } from "react";
 import { errorMessage } from "../text";
 import { startRecorder } from "./recorder";
+import { createTurnGate } from "./turnGate";
 
 export type VoiceStatus = "idle" | "connecting" | "live" | "ending" | "ended" | "failed";
 export type EndReason = "you" | "interviewer" | "time";
@@ -169,6 +170,7 @@ async function openSession({
   const startedAt = performance.now();
   let model = "";
   let transcript = emptyTranscript();
+  const gate = createTurnGate({ active: !listenFirst });
   const eventLog: string[] = [];
   events.addEventListener("message", ({ data }) => {
     const at = performance.now() - startedAt;
@@ -177,6 +179,7 @@ async function openSession({
     const wasEnding = transcript.endRequested;
     transcript = reduceEvent(transcript, event, { at, model });
     onState(() => ({ transcript }));
+    sendAll(gate.onEvent(event, at));
     if (transcript.endRequested && !wasEnding) stopListening();
     if (transcript.endRequested) hangUpAfterGoodbye();
   });
@@ -194,6 +197,10 @@ async function openSession({
     if (events.readyState === "open") events.send(JSON.stringify(event));
   }
 
+  function sendAll(list: object[]) {
+    for (const event of list) send(event);
+  }
+
   let hangUp: ReturnType<typeof setTimeout> | undefined;
   let fallback: ReturnType<typeof setTimeout> | undefined;
   function hangUpAfterGoodbye() {
@@ -205,10 +212,15 @@ async function openSession({
   }
   events.addEventListener("open", () => {
     // The interviewer opens, unless your speech already triggered a reply.
-    setTimeout(() => {
-      if (!transcript.responded && transcript.speaking !== "you") send({ type: "response.create" });
-    }, GREETING_DELAY_MS);
+    setTimeout(greet, GREETING_DELAY_MS);
   });
+
+  function greet() {
+    if (transcript.responded) return;
+    // While listening first, the user may already be presenting: don't talk over them.
+    if (listenFirst && transcript.speaking === "you") return;
+    sendAll(gate.reply());
+  }
 
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
@@ -220,7 +232,6 @@ async function openSession({
       sdp: offer.sdp ?? "",
       task,
       frame,
-      listenFirst,
       coach,
       maxMinutes,
       persona,
@@ -244,6 +255,7 @@ async function openSession({
     const now = performance.now();
     const elapsedMs = now - startedAt;
     onState(() => ({ elapsedMs }));
+    sendAll(gate.tick(elapsedMs));
     if (transcript.endRequested) return;
     if (isBusy(transcript)) quietSince = now;
     const step = nextWrapUpStep({
@@ -288,26 +300,12 @@ async function openSession({
     maxMinutes: call.maxMinutes,
     handOff(message: string) {
       listening = false;
-      send({
-        type: "session.update",
-        session: {
-          type: "realtime",
-          audio: {
-            input: {
-              turn_detection: {
-                type: "semantic_vad",
-                create_response: true,
-                interrupt_response: true,
-              },
-            },
-          },
-        },
-      });
+      gate.activate();
       send({
         type: "conversation.item.create",
         item: { type: "message", role: "user", content: [{ type: "input_text", text: message }] },
       });
-      send({ type: "response.create" });
+      sendAll(gate.reply());
     },
     share(text: string) {
       send({

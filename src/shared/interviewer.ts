@@ -32,6 +32,7 @@ export function interviewerInstructions(
     `Persona: ${describePersona(persona)}`,
     `Tone: ${TONE[persona.style]}`,
     `Turn-taking: ${INTERRUPTIONS[persona.interruptions]}`,
+    "If the user cut you off, pick up naturally from what they said; don't restate your whole question.",
     `Speak only ${persona.language}. Keep each turn short, like a real interviewer: one question at a time.`,
     coach ? COACHING : NO_COACHING,
     `Task: ${task}`,

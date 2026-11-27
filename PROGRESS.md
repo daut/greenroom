@@ -69,6 +69,8 @@ Legend: `[x]` done · `[~]` in progress · `[ ]` todo · `[!]` blocked / needs i
 - [x] Transcript auto-follows only when you're at the bottom; scrolling up stops it
 - [x] Double replies: greeting only if nothing started yet; mic muted + turn detection off once the interviewer ends; near-field noise reduction; empty (noise/echo) turns dropped
 - [x] Per-session event log saved to `userData/recordings/logs/*.jsonl` for debugging
+- [x] Noise-resilient turn-taking (`src/renderer/src/voice/turnGate.ts`, TDD): server auto-reply and auto-interrupt off. Turns of ≥1.8 s of audio get a reply at once; shorter ones only once the transcript has words; noise items are deleted. Talking over the interviewer stops it after 1.2 s or once your words come through. Thresholds from the Nov 25–27 logs (noise 1.1–1.6 s, shortest real turn 1.9 s)
+- [!] Noise gate untested live: check a new log for `conversation.item.delete` after noise, and that `output_audio_buffer.clear` is followed by `conversation.item.truncated`
 - [x] Sound check retested by user: no double replies. The mini model said goodbye but never called `end_session`; instructions now insist on the call in the same response
 - [!] Confirm the interviewer now hangs up by itself (newest `recordings/logs/*.jsonl` should show a `function_call` in the last `response.done`)
 - [x] Voice preview in Interviewer settings (short receive-only Realtime session; OpenAI TTS models shut down Jan 2027)
