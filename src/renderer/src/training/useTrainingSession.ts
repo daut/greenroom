@@ -1,13 +1,13 @@
 import type { TrainingSession } from "@shared/training";
 import { useCallback, useEffect, useState } from "react";
+import { loadSession, openSession } from "./sessionWrites";
 
-/** Loads one training session and saves every change straight back to disk. */
+/**
+ * Loads one training session and saves every change straight back to disk. While open, changes
+ * made elsewhere (`updateSession`) come through here too.
+ */
 export function useTrainingSession(id: string) {
   const [session, setSession] = useState<TrainingSession | null | undefined>(undefined);
-
-  useEffect(() => {
-    window.greenroom.sessions.get(id).then(setSession);
-  }, [id]);
 
   const update = useCallback((change: (s: TrainingSession) => TrainingSession) => {
     setSession((current) => {
@@ -17,6 +17,20 @@ export function useTrainingSession(id: string) {
       return next;
     });
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    let close = () => {};
+    loadSession(id).then((loaded) => {
+      if (!active) return;
+      setSession(loaded);
+      close = openSession(id, update);
+    });
+    return () => {
+      active = false;
+      close();
+    };
+  }, [id, update]);
 
   return { session, update };
 }

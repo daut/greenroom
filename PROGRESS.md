@@ -132,6 +132,7 @@ Handover notes for the next agent: see README "Development" and "Adding a traini
 - [x] Structured findings (`src/shared/report.ts`, TDD): kind, criterion, severity, habit label, numbered-transcript line, quote → better, why, recurring; `focus`; `habitReview` of known habits. Old reports still render ("Score again" upgrades)
 - [x] Report UI: "Work on this first", "Also noticed", "Since last time"; per finding Hear it (cues Replay), Discuss, Drill this
 - [x] Discuss (`src/shared/coach.ts`, TDD): text chat with history replayed into each prompt (works with Claude Code); voice call via the drill model in coach mode, not recorded, transcript appended to the chat. Stored in `report.discussion`
+- [x] Coach threads: one conversation per finding (keyed by quote→better, survives re-scoring) plus the whole report; text questions keep running when the panel closes or the session is left (`coachRequests.ts`, `sessionWrites.ts`); Discuss links show replying / failed / message count. Untested live.
 - [x] `drills` phase kind ("Practice") in all three trainings: typed reps (5 generated, checked item by item) and ~3-minute spoken reps with on-the-spot correction, then a check. Entries in the phase artifact
 - [x] Habits (`src/shared/habits.ts`, TDD): tracked across sessions per training (open / improving / fixed); known habits go to the scorer; English "What to work on" pre-fills; History lists them
 - [x] Voice: `coach` and `maxMinutes` on `VoiceCallRequest` (main validates), `record` option
@@ -176,6 +177,8 @@ Handover notes for the next agent: see README "Development" and "Adding a traini
 - [x] Min-window Drill: cost + Start moved above the question list under 640px
 
 ## Log
+
+- 2026-11-27: Coach sidebar: a separate conversation per correction; questions keep going in the background after closing the panel or leaving the session.
 
 - 2026-11-26: Interview loop: pick rounds in the setup, each round has its own interviewer, rubric and panel notes from earlier rounds, then a hiring debrief. Scratchpad for coding and design. Untested live.
 

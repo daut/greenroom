@@ -1,10 +1,16 @@
-import { discussPrompt, VOICE_COACH_FRAME, voiceCoachTask, voiceTurns } from "@shared/coach";
+import {
+  discussPrompt,
+  threadKey,
+  threadTurns,
+  VOICE_COACH_FRAME,
+  voiceCoachTask,
+  voiceTurns,
+} from "@shared/coach";
 import type { ChatTurn, Finding } from "@shared/report";
 import { type RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { RichText } from "../components/RichText";
-import { errorMessage } from "../text";
-import { askText } from "./ask";
 import { CoachCall, type CoachCallResult } from "./CoachCall";
+import { appendDiscussion, askCoach, type CoachTarget, useCoachRequests } from "./coachRequests";
 
 const GENERAL_STARTERS = [
   "What should I fix first?",
@@ -20,30 +26,37 @@ const FINDING_STARTERS = ["Why is this wrong?", "Give me more examples", "Quiz m
 export function CoachPanel({
   system,
   briefing,
-  turns,
+  run,
+  discussion,
+  findings,
   about,
   onClearAbout,
-  onAdd,
   onClose,
 }: {
   system: string;
   briefing: (options?: { transcript?: boolean }) => string;
-  turns: ChatTurn[];
-  /** The finding the next question is about. */
+  /** The scored run being discussed. */
+  run: Omit<CoachTarget, "thread">;
+  discussion: ChatTurn[];
+  findings: Finding[];
+  /** The finding being discussed; each has its own conversation. */
   about: Finding | null;
   onClearAbout: () => void;
-  onAdd: (turns: ChatTurn[]) => void;
   onClose: () => void;
 }) {
+  const target = { ...run, thread: threadKey(about) };
+  const turns = threadTurns(discussion, findings, target.thread);
+  const request = useCoachRequests()(target);
+  const pending = request && !request.error ? request.question : null;
+  const error = request?.error;
   const [draft, setDraft] = useState("");
-  const [pending, setPending] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [onCall, setOnCall] = useState(false);
   const input = useRef<HTMLTextAreaElement>(null);
   const chat = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLElement>(null);
   const restoreFocus = useReturnFocus();
   const [closing, setClosing] = useState(false);
+  const callTarget = useRef(target);
 
   // Each new pin (or opening the panel) puts the cursor in the question box.
   // biome-ignore lint/correctness/useExhaustiveDependencies: refocus when the pinned finding changes
@@ -51,41 +64,34 @@ export function CoachPanel({
     input.current?.focus();
   }, [about]);
 
+  // Each conversation starts with an empty box, or with its question that failed (maybe while
+  // the panel was closed) ready to send again.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only on a new conversation or failure
+  useEffect(() => {
+    setDraft(request?.error ? request.question : "");
+  }, [target.thread, request?.error]);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: follow the conversation as it grows
   useLayoutEffect(() => {
     const el = chat.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [turns.length, pending]);
+  }, [turns.length, pending, target.thread]);
 
-  const ask = async (question: string) => {
+  const ask = (question: string) => {
     const text = question.trim();
     if (!text || pending) return;
-    setPending(text);
     setDraft("");
-    setError(null);
-    try {
-      const reply = await askText(
-        "score",
-        system,
-        discussPrompt(briefing(), turns, text, about ?? undefined),
-      );
-      const at = new Date().toISOString();
-      onAdd([
-        { role: "you", text, at, findingId: about?.id, via: "text" },
-        { role: "coach", text: reply, at, via: "text" },
-      ]);
-    } catch (e) {
-      setError(errorMessage(e));
-      setDraft(text);
-    } finally {
-      setPending(null);
-    }
+    void askCoach(target, system, discussPrompt(briefing(), turns, text, about ?? undefined), text);
   };
 
-  const onCallFinished = useCallback(
-    ({ lines }: CoachCallResult) => onAdd(voiceTurns(lines, new Date().toISOString())),
-    [onAdd],
-  );
+  const startCall = () => {
+    callTarget.current = target;
+    return voiceCoachTask(briefing({ transcript: false }), about ?? undefined);
+  };
+  const onCallFinished = useCallback(({ lines }: CoachCallResult) => {
+    const t = callTarget.current;
+    void appendDiscussion(t, voiceTurns(lines, new Date().toISOString(), t.thread));
+  }, []);
 
   /** Close and Escape hand focus back to the opener; a click elsewhere keeps it there. */
   const close = (returnFocus = true) => {
@@ -95,8 +101,7 @@ export function CoachPanel({
     else onClose();
   };
   useClickOutside(panel, () => close(false));
-  const lastAsked = turns.findLast((t) => t.role === "you")?.findingId;
-  const showStarters = !pending && (turns.length === 0 || about?.id !== lastAsked);
+  const showStarters = !pending && turns.length === 0;
 
   return (
     <aside
@@ -219,7 +224,7 @@ export function CoachPanel({
           teaser="Talk instead"
           label={about ? "Talk this one through" : "Start the call"}
           frame={VOICE_COACH_FRAME}
-          task={() => voiceCoachTask(briefing({ transcript: false }), about ?? undefined)}
+          task={startCall}
           onFinished={onCallFinished}
           onLiveChange={setOnCall}
         />

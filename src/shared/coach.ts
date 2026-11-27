@@ -4,9 +4,16 @@ import {
   formatTranscript,
   type KnownHabit,
   type Report,
+  type ReportArtifact,
   rubricText,
 } from "./report";
-import type { PhaseContext, ReportPhase, VoiceRun } from "./training";
+import {
+  type PhaseContext,
+  type ReportPhase,
+  saveArtifact,
+  type TrainingSession,
+  type VoiceRun,
+} from "./training";
 
 const COACH_ROLE = `Now you are talking the learner through this report one-to-one. Answer their questions about their scores and findings: explain the rule or reason behind each point simply, give two or three fresh examples, point to the exact moment in the transcript, and suggest one small thing to try. Be honest; if a finding was too harsh or the transcript misheard them, say so. Keep replies under 150 words unless they ask for more. Plain text: short paragraphs, "- " bullets, **bold** for the key phrase. When it helps, end with a quick check question for them to answer.`;
 
@@ -72,10 +79,60 @@ ${start}
 Talk like a coach on a call: short turns, one idea at a time, check they understood before moving on, and have them say the better version out loud. Answer their questions honestly; if a finding was wrong, say so. When they're done, close briefly.`;
 }
 
-export function voiceTurns(lines: VoiceRun["lines"], at: string): ChatTurn[] {
+export function voiceTurns(lines: VoiceRun["lines"], at: string, thread: string): ChatTurn[] {
   return lines
     .filter((l) => l.text.trim())
-    .map((l) => ({ role: l.speaker === "you" ? "you" : "coach", text: l.text, at, via: "voice" }));
+    .map((l) => ({
+      role: l.speaker === "you" ? "you" : "coach",
+      text: l.text,
+      at,
+      via: "voice",
+      thread,
+    }));
+}
+
+/**
+ * Each finding has its own conversation, keyed by what it corrects rather than its id, so it
+ * survives re-scoring when the same correction comes back. "" is the whole report.
+ */
+export function threadKey(finding: Finding | null): string {
+  return finding ? `${finding.quote}→${finding.better}` : "";
+}
+
+/** The turns of one conversation. */
+export function threadTurns(discussion: ChatTurn[], findings: Finding[], thread: string) {
+  return withThreads(discussion, findings).filter((t) => t.thread === thread);
+}
+
+/**
+ * Tags older turns with their conversation, using the findings they were asked about (so do it
+ * before re-scoring renumbers them). A reply follows its question; calls were about the report.
+ */
+export function withThreads(discussion: ChatTurn[], findings: Finding[]): ChatTurn[] {
+  let current = "";
+  return discussion.map((t) => {
+    current = t.thread ?? legacyThread(t, findings, current);
+    return t.thread === current ? t : { ...t, thread: current };
+  });
+}
+
+export function withDiscussion(
+  session: TrainingSession,
+  phaseId: string,
+  runAt: string,
+  turns: ChatTurn[],
+): TrainingSession {
+  const reports = (session.artifacts[phaseId] as ReportArtifact | undefined) ?? {};
+  const report = reports[runAt];
+  if (!report) return session;
+  const discussion = [...(report.discussion ?? []), ...turns];
+  return saveArtifact(session, phaseId, { ...reports, [runAt]: { ...report, discussion } });
+}
+
+function legacyThread(turn: ChatTurn, findings: Finding[], previous: string): string {
+  if (turn.via === "voice") return "";
+  if (turn.role === "coach") return previous;
+  return threadKey(findings.find((f) => f.id === turn.findingId) ?? null);
 }
 
 function scoresText(phase: ReportPhase, report: Report): string {

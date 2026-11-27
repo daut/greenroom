@@ -13,7 +13,14 @@ export interface FindingActions {
   atMs?: (finding: Finding) => number | null;
   onHear?: (finding: Finding) => void;
   onDiscuss?: (finding: Finding) => void;
+  /** How the conversation about this finding stands, e.g. the coach still replying. */
+  discussStatus?: (finding: Finding) => Stamp | null;
   onDrill?: (finding: Finding) => void;
+}
+
+export interface Stamp {
+  label: string;
+  tone: string;
 }
 
 export function FindingList({
@@ -36,10 +43,12 @@ export function FindingItem({
   atMs,
   onHear,
   onDiscuss,
+  discussStatus,
   onDrill,
 }: { finding: Finding; rubric: RubricCriterion[] } & FindingActions) {
   const at = atMs?.(f) ?? null;
   const criterion = rubric.find((c) => c.id === f.criterion)?.label;
+  const status = discussStatus?.(f);
   return (
     <li className="finding">
       <div className="finding-head">
@@ -67,6 +76,7 @@ export function FindingItem({
               Discuss
             </button>
           )}
+          {onDiscuss && status && <span className={`stamp ${status.tone}`}>{status.label}</span>}
           {onDrill && (
             <button type="button" className="link" onClick={() => onDrill(f)}>
               Drill this

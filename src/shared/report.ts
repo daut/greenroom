@@ -77,7 +77,9 @@ export interface ChatTurn {
   role: "you" | "coach";
   text: string;
   at: string;
-  /** The finding this question is about, if any. */
+  /** Which conversation it belongs to: `threadKey` of the finding, or "" for the whole report. */
+  thread?: string;
+  /** Older turns only: the finding the question was about (ids change when re-scored). */
   findingId?: string;
   via?: "text" | "voice";
 }

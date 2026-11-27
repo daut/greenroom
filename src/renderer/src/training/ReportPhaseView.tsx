@@ -1,9 +1,8 @@
-import { coachBriefing, coachSystem } from "@shared/coach";
+import { coachBriefing, coachSystem, threadKey, threadTurns, withThreads } from "@shared/coach";
 import { knownHabits } from "@shared/habits";
 import type { AudioReview } from "@shared/pronunciation";
 import {
   buildReport,
-  type ChatTurn,
   type Finding,
   habitKey,
   type Report,
@@ -17,7 +16,6 @@ import {
   completePhase,
   contextOf,
   type ReportPhase,
-  saveArtifact,
   type TrainingDefinition,
   type TrainingSession,
   type VoiceArtifact,
@@ -27,7 +25,8 @@ import { useEffect, useState } from "react";
 import { dateTime, errorMessage, formatUsd } from "../text";
 import { askStructured } from "./ask";
 import { CoachPanel } from "./CoachPanel";
-import { type FindingActions, FindingList } from "./Findings";
+import { type CoachRequest, type CoachTarget, useCoachRequests } from "./coachRequests";
+import { type FindingActions, FindingList, type Stamp } from "./Findings";
 import { pronunciationEstimateUsd, reviewPronunciation } from "./pronunciation";
 import { type Cue, Replay } from "./Replay";
 import { useAllSessions } from "./useAllSessions";
@@ -98,7 +97,9 @@ export function ReportPhaseView({
       const report = buildReport(run, phase.rubric, reply, audio);
       update((s) => {
         const current = (s.artifacts[phase.id] as ReportArtifact | undefined) ?? {};
-        const discussion = current[run.at]?.discussion;
+        const previous = current[run.at];
+        const discussion =
+          previous?.discussion && withThreads(previous.discussion, previous.findings ?? []);
         return completePhase(def, s, phase.id, {
           ...current,
           [run.at]: discussion ? { ...report, discussion } : report,
@@ -175,18 +176,7 @@ export function ReportPhaseView({
                         )
                       : ""
                   }
-                  onDiscuss={(turns) =>
-                    update((s) => {
-                      const current = (s.artifacts[phase.id] as ReportArtifact | undefined) ?? {};
-                      const r = current[run.at];
-                      if (!r) return s;
-                      const discussion = [...(r.discussion ?? []), ...turns];
-                      return saveArtifact(s, phase.id, {
-                        ...current,
-                        [run.at]: { ...r, discussion },
-                      });
-                    })
-                  }
+                  coachRun={{ sessionId: session.id, phaseId: phase.id, runAt: run.at }}
                 />
               )}
             </li>
@@ -206,7 +196,7 @@ function OpenRun({
   onScore,
   onDrill,
   briefing,
-  onDiscuss,
+  coachRun,
 }: {
   phase: ReportPhase;
   run: VoiceRun;
@@ -217,12 +207,21 @@ function OpenRun({
   onScore: () => void;
   onDrill: ((habit: string) => void) | null;
   briefing: (options?: { transcript?: boolean }) => string;
-  onDiscuss: (turns: ChatTurn[]) => void;
+  coachRun: Omit<CoachTarget, "thread">;
 }) {
   const [cue, setCue] = useState<Cue | null>(null);
   const [about, setAbout] = useState<Finding | null>(null);
   const [coachOpen, setCoachOpen] = useState(false);
+  const coachRequest = useCoachRequests();
   const findings = report?.findings;
+  const coachStatus = (f: Finding | null): Stamp | null =>
+    report
+      ? threadStamp(
+          coachRequest({ ...coachRun, thread: threadKey(f) }),
+          threadTurns(report.discussion ?? [], findings ?? [], threadKey(f)).length,
+        )
+      : null;
+  const wholeReportStatus = coachStatus(null);
 
   // Re-scoring renumbers findings, so a question can't stay pinned to the old one.
   useEffect(() => {
@@ -253,6 +252,7 @@ function OpenRun({
             atMs: (f) => recordingMs(run, f),
             onHear: hear,
             onDiscuss: discuss,
+            discussStatus: coachStatus,
             onDrill: onDrill ? (f) => onDrill(habitKey(f.habit)) : undefined,
           }}
         />
@@ -271,21 +271,20 @@ function OpenRun({
           <button type="button" className="btn" data-coach-opener onClick={() => discuss(null)}>
             Discuss with the coach
           </button>
-          {report.discussion?.length ? (
-            <span className="stamp pending">
-              {report.discussion.length} message{report.discussion.length === 1 ? "" : "s"}
-            </span>
-          ) : null}
+          {wholeReportStatus && (
+            <span className={`stamp ${wholeReportStatus.tone}`}>{wholeReportStatus.label}</span>
+          )}
         </div>
       )}
       {report && coachOpen && (
         <CoachPanel
           system={coachSystem(phase)}
           briefing={briefing}
-          turns={report.discussion ?? []}
+          run={coachRun}
+          discussion={report.discussion ?? []}
+          findings={findings ?? []}
           about={about}
           onClearAbout={() => setAbout(null)}
-          onAdd={onDiscuss}
           onClose={() => setCoachOpen(false)}
         />
       )}
@@ -444,6 +443,15 @@ function Metric({ label, value, hint }: { label: string; value: string; hint: st
     </div>
   );
 }
+
+/** How a conversation with the coach stands: waiting, failed, or how long it is. */
+function threadStamp(request: CoachRequest | undefined, messages: number): Stamp | null {
+  if (request) return request.error ? { label: "Reply failed", tone: "bad" } : REPLYING;
+  if (!messages) return null;
+  return { label: `${messages} message${messages === 1 ? "" : "s"}`, tone: "pending" };
+}
+
+const REPLYING: Stamp = { label: "Coach replying…", tone: "pending" };
 
 /** Where the finding's line starts on the recording's clock (what the player shows). */
 function recordingMs(run: VoiceRun, f: Finding): number | null {

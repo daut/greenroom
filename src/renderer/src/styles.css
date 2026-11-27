@@ -1139,6 +1139,7 @@ textarea {
 .finding-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: baseline;
   gap: 18px;
 }
 

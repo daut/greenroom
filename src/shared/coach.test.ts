@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { coachBriefing, coachSystem, discussPrompt, voiceCoachTask, voiceTurns } from "./coach";
-import type { Finding, Report } from "./report";
-import type { ReportPhase, VoiceRun } from "./training";
+import {
+  coachBriefing,
+  coachSystem,
+  discussPrompt,
+  threadKey,
+  threadTurns,
+  voiceCoachTask,
+  voiceTurns,
+  withDiscussion,
+  withThreads,
+} from "./coach";
+import type { ChatTurn, Finding, Report } from "./report";
+import type { ReportPhase, TrainingSession, VoiceRun } from "./training";
 
 const phase: ReportPhase = {
   kind: "report",
@@ -134,10 +144,116 @@ describe("voiceCoachTask", () => {
 });
 
 describe("voiceTurns", () => {
-  it("turns a spoken discussion into chat turns marked as voice", () => {
-    expect(voiceTurns(run.lines, "t")).toEqual([
-      { role: "coach", text: "How would teams work?", at: "t", via: "voice" },
-      { role: "you", text: "How would it look like?", at: "t", via: "voice" },
+  it("turns a spoken discussion into chat turns marked as voice, in their thread", () => {
+    expect(voiceTurns(run.lines, "t", "x")).toEqual([
+      { role: "coach", text: "How would teams work?", at: "t", via: "voice", thread: "x" },
+      { role: "you", text: "How would it look like?", at: "t", via: "voice", thread: "x" },
     ]);
   });
 });
+
+describe("threadTurns", () => {
+  const other: Finding = { ...finding, id: "f2", quote: "He go.", better: "He goes." };
+  const whole = threadKey(null);
+  const f1 = threadKey(finding);
+
+  it("keeps each finding's conversation apart from the others and the whole report", () => {
+    const discussion: ChatTurn[] = [
+      { role: "you", text: "a?", at: "t", thread: f1 },
+      { role: "coach", text: "a.", at: "t", thread: f1 },
+      { role: "you", text: "b?", at: "t", thread: threadKey(other) },
+      { role: "coach", text: "b.", at: "t", thread: threadKey(other) },
+      { role: "you", text: "c?", at: "t", thread: whole },
+      { role: "coach", text: "c.", at: "t", thread: whole },
+    ];
+
+    expect(texts(threadTurns(discussion, [finding, other], f1))).toEqual(["a?", "a."]);
+    expect(texts(threadTurns(discussion, [finding, other], whole))).toEqual(["c?", "c."]);
+  });
+
+  it("finds a finding's thread again after re-scoring gives it a new id", () => {
+    const discussion: ChatTurn[] = [{ role: "you", text: "a?", at: "t", thread: f1 }];
+    const rescored = { ...finding, id: "f7" };
+
+    expect(texts(threadTurns(discussion, [rescored], threadKey(rescored)))).toEqual(["a?"]);
+  });
+
+  it("sorts older, untagged discussions by the finding each question was about", () => {
+    const discussion: ChatTurn[] = [
+      { role: "you", text: "general?", at: "t" },
+      { role: "coach", text: "general.", at: "t" },
+      { role: "you", text: "a?", at: "t", findingId: "f1" },
+      { role: "coach", text: "a.", at: "t" },
+      { role: "you", text: "gone?", at: "t", findingId: "f9" },
+      { role: "coach", text: "gone.", at: "t" },
+    ];
+
+    expect(texts(threadTurns(discussion, [finding], f1))).toEqual(["a?", "a."]);
+    expect(texts(threadTurns(discussion, [finding], whole))).toEqual([
+      "general?",
+      "general.",
+      "gone?",
+      "gone.",
+    ]);
+  });
+
+  it("puts older calls with the whole report, even after a question about a finding", () => {
+    const discussion: ChatTurn[] = [
+      { role: "you", text: "a?", at: "t", findingId: "f1" },
+      { role: "coach", text: "a.", at: "t" },
+      { role: "coach", text: "Hi, which point?", at: "t", via: "voice" },
+      { role: "you", text: "The first.", at: "t", via: "voice" },
+    ];
+
+    expect(texts(threadTurns(discussion, [finding], f1))).toEqual(["a?", "a."]);
+    expect(texts(threadTurns(discussion, [finding], whole))).toEqual([
+      "Hi, which point?",
+      "The first.",
+    ]);
+  });
+});
+
+describe("withThreads", () => {
+  it("tags older turns so they stay put when re-scoring renumbers the findings", () => {
+    const discussion: ChatTurn[] = [
+      { role: "you", text: "a?", at: "t", findingId: "f1" },
+      { role: "coach", text: "a.", at: "t" },
+    ];
+    const tagged = withThreads(discussion, [finding]);
+    const rescored = { ...finding, quote: "He go.", better: "He goes." };
+
+    expect(threadTurns(tagged, [rescored], threadKey(rescored))).toEqual([]);
+    expect(texts(threadTurns(tagged, [rescored], threadKey(finding)))).toEqual(["a?", "a."]);
+  });
+});
+
+describe("withDiscussion", () => {
+  it("appends turns to the run's report and leaves the other reports alone", () => {
+    const session = {
+      id: "s",
+      trainingId: "t",
+      title: "",
+      createdAt: "",
+      updatedAt: "",
+      done: [],
+      artifacts: { report: { [run.at]: report, other: report } },
+    } as unknown as TrainingSession;
+    const turn: ChatTurn = { role: "you", text: "q", at: "t", thread: "" };
+
+    const next = withDiscussion(session, "report", run.at, [turn]);
+    const reports = next.artifacts.report as Record<string, Report>;
+
+    expect(reports[run.at]?.discussion).toEqual([turn]);
+    expect(reports.other?.discussion).toBeUndefined();
+  });
+
+  it("leaves the session alone when the report is gone", () => {
+    const session = { artifacts: {} } as unknown as TrainingSession;
+
+    expect(withDiscussion(session, "report", run.at, [])).toBe(session);
+  });
+});
+
+function texts(turns: ChatTurn[]): string[] {
+  return turns.map((t) => t.text);
+}
