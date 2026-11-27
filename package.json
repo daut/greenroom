@@ -1,7 +1,7 @@
 {
   "name": "greenroom",
   "productName": "Greenroom",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Personal interview and presentation trainer with realtime voice mock sessions",
   "author": "daut",
   "license": "MIT",
