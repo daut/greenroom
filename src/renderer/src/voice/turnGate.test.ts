@@ -155,6 +155,40 @@ describe("turn gate", () => {
     expect(sent).toEqual([CREATE, CANCEL, del("u2"), CREATE]);
   });
 
+  it("answers once when you resume before the reply is created (2026-11-27 log, 55909)", () => {
+    const gate = createTurnGate();
+
+    const sent = replay(gate, [
+      [36564, started("u1", 34828)],
+      [55909, stopped("u1", 54680)],
+      [56030, started("u2", 54284)],
+      [56069, created("r1")],
+      [56200, done("r1")],
+      [56581, transcribed("u1", "Can you provide me with more context?")],
+      [57530, stopped("u2", 56300)],
+      [58051, transcribed("u2", "Give me a background.")],
+    ]);
+
+    expect(sent).toEqual([CREATE, CANCEL, CREATE]);
+  });
+
+  it("still answers when the sound that cancelled a not-yet-created reply was noise", () => {
+    const gate = createTurnGate();
+
+    const sent = replay(gate, [
+      [0, started("u1", 0)],
+      [5000, stopped("u1", 5000)],
+      [5050, started("u2", 4900)],
+      [5100, created("r1")],
+      [5200, done("r1")],
+      [5800, stopped("u2", 5900)],
+      [6300, transcribed("u1", "I usually wake up at six.")],
+      [6400, transcribed("u2", "")],
+    ]);
+
+    expect(sent).toEqual([CREATE, CANCEL, del("u2"), CREATE]);
+  });
+
   it("waits for a cancelled reply to finish before asking for the next one", () => {
     const gate = createTurnGate();
 

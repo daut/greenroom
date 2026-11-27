@@ -31,7 +31,7 @@ export function createTurnGate({ active = true } = {}): TurnGate {
   /** A reply was asked for while another response was still running. */
   let queued: { itemId: string | null } | null = null;
   /** The next `response.created` answers this turn. */
-  let awaitingCreated: { itemId: string | null; discard: boolean } | null = null;
+  let awaitingCreated: { itemId: string | null; discard: boolean; cancel: boolean } | null = null;
   /** The user is due a reply that a noise turn would otherwise swallow. */
   let owed = false;
   let bargeIn: { itemId: string; since: number | null } | null = null;
@@ -100,6 +100,11 @@ export function createTurnGate({ active = true } = {}): TurnGate {
       owed = true;
       return cancel();
     }
+    // Asked for but not created yet: same, once it exists.
+    if (awaitingCreated) {
+      owed = true;
+      awaitingCreated.cancel = true;
+    }
     return [];
   }
 
@@ -139,7 +144,7 @@ export function createTurnGate({ active = true } = {}): TurnGate {
     }
     const turn = answering?.itemId ? turns.get(answering.itemId) : undefined;
     if (turn) turn.reply = id;
-    return [];
+    return answering?.cancel ? cancel() : [];
   }
 
   function responseDone(id: string, output: { id?: string }[]): ClientEvent[] {
@@ -162,7 +167,7 @@ export function createTurnGate({ active = true } = {}): TurnGate {
       queued = { itemId };
       return [];
     }
-    awaitingCreated = { itemId, discard: false };
+    awaitingCreated = { itemId, discard: false, cancel: false };
     return [{ type: "response.create" }];
   }
 

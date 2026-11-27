@@ -31,6 +31,7 @@ export function interviewerInstructions(
     frame,
     ...(coach ? coachingStyle(persona) : interviewerStyle(persona)),
     "If the user cut you off, pick up naturally from what they said; don't restate your whole question.",
+    "If the user repeats or rephrases a request you just answered, build on your last answer instead of giving it again.",
     `Task: ${task}`,
     "When the task is complete, say one short closing sentence, then call end_session in that same response. Never call it earlier.",
     "Saying goodbye without calling end_session leaves the user stuck in the session, so always make the call after your closing sentence.",
