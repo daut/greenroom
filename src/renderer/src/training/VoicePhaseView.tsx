@@ -16,6 +16,7 @@ import { SessionBilling } from "../voice/SessionBilling";
 import { clock, RunningTime, Transcript } from "../voice/SessionPanel";
 import { type EndReason, useVoiceSession } from "../voice/useVoiceSession";
 import { ChoicePicker } from "./ChoicePicker";
+import { DeleteRun } from "./DeleteRun";
 import type { UpdateSession } from "./useTrainingSession";
 
 const ENDED_BY: Record<EndReason, string> = {
@@ -185,7 +186,7 @@ export function VoicePhaseView({
       {runs.length > 0 && !live && (
         <div className="programme">
           <h2 className="section-title">Runs</h2>
-          <ol className="script">
+          <ol className="script with-actions">
             {[...runs].reverse().map((run) => (
               <li key={run.at}>
                 <span className="script-speaker">
@@ -208,6 +209,7 @@ export function VoicePhaseView({
                     {run.endedBy ? ` · ${ENDED_BY[run.endedBy as EndReason] ?? run.endedBy}` : ""}
                   </span>
                 </span>
+                <DeleteRun def={def} voicePhaseId={phase.id} run={run} update={update} />
               </li>
             ))}
           </ol>

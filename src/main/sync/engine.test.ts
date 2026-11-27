@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { TrainingSession } from "@shared/training";
 import { beforeEach, describe, expect, it } from "vitest";
+import { createRecordingTrash } from "../recording-trash";
 import { createSessionStore, type SessionStore } from "../session-store";
 import { type RemoteRow, type SyncRemote, syncOnce } from "./engine";
 
@@ -37,6 +38,9 @@ function fakeRemote(
     },
     async downloadRecording(name) {
       return files[name] ?? null;
+    },
+    async deleteRecordings(names) {
+      for (const name of names) delete files[name];
     },
   };
 }
@@ -153,5 +157,27 @@ describe("syncOnce", () => {
       uploaded: 1,
     });
     expect(existsSync(join(recordings, "gone.webm"))).toBe(false);
+  });
+
+  it("deletes trashed recordings on the server and forgets them", async () => {
+    const remote = fakeRemote([], { "gone.webm": Buffer.from("A"), "kept.webm": Buffer.from("B") });
+    createRecordingTrash(recordings).remove([join(recordings, "gone.webm")]);
+
+    await syncOnce({ store, remote, recordingsDir: recordings });
+
+    expect(Object.keys(remote.files)).toEqual(["kept.webm"]);
+    expect(createRecordingTrash(recordings).pending()).toEqual([]);
+  });
+
+  it("doesn't download a trashed recording a session still points at", async () => {
+    const path = join(recordings, "take.webm");
+    store.save(session("a", "2026-11-25T10:00:00.000Z", path));
+    const remote = fakeRemote([], { "take.webm": Buffer.from("A") });
+    createRecordingTrash(recordings).remove([path]);
+
+    await syncOnce({ store, remote, recordingsDir: recordings });
+
+    expect(existsSync(path)).toBe(false);
+    expect(remote.files).toEqual({});
   });
 });

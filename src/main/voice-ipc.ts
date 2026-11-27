@@ -15,6 +15,7 @@ import { activePersona, withPersonaOverride } from "@shared/settings";
 import { ipcMain, shell, systemPreferences } from "electron";
 import type { KeyStore } from "./key-store";
 import { createRealtimeCall } from "./realtime-call";
+import { createRecordingTrash } from "./recording-trash";
 import type { SettingsStore } from "./settings-store";
 import type { SpendLedger } from "./spend-ledger";
 import { reviewAudioWithOpenAI } from "./text/openai-audio";
@@ -27,6 +28,7 @@ interface Deps {
 }
 
 export function registerVoiceIpc({ settingsStore, keyStore, ledger, recordingsDir }: Deps) {
+  const trash = createRecordingTrash(recordingsDir);
   const monthSpend = (): MonthSpend => ({
     spentUsd: ledger.monthTotal(),
     budgetUsd: settingsStore.load().limits.monthlyBudgetUsd,
@@ -108,6 +110,11 @@ export function registerVoiceIpc({ settingsStore, keyStore, ledger, recordingsDi
 
   ipcMain.handle(IPC.voiceRevealRecording, (_e, path: unknown) => {
     if (typeof path === "string" && path.startsWith(recordingsDir)) shell.showItemInFolder(path);
+  });
+
+  ipcMain.handle(IPC.voiceDeleteRecordings, (_e, paths: unknown) => {
+    if (!Array.isArray(paths)) return;
+    trash.remove(paths.filter((p): p is string => typeof p === "string"));
   });
 }
 

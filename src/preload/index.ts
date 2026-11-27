@@ -22,6 +22,7 @@ const api: GreenroomApi = {
     saveEventLog: (jsonl) => ipcRenderer.invoke(IPC.voiceSaveEventLog, jsonl),
     revealRecording: (path) => ipcRenderer.invoke(IPC.voiceRevealRecording, path),
     readRecording: (path) => ipcRenderer.invoke(IPC.voiceReadRecording, path),
+    deleteRecordings: (paths) => ipcRenderer.invoke(IPC.voiceDeleteRecordings, paths),
   },
   sessions: {
     list: () => ipcRenderer.invoke(IPC.sessionsList),

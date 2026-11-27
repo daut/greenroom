@@ -99,6 +99,8 @@ export interface GreenroomApi {
     saveEventLog(jsonl: string): Promise<string>;
     revealRecording(path: string): Promise<void>;
     readRecording(path: string): Promise<ArrayBuffer | null>;
+    /** Deletes recordings here and, on the next sync, on the server. */
+    deleteRecordings(paths: string[]): Promise<void>;
   };
   sessions: {
     list(): Promise<TrainingSession[]>;
@@ -168,6 +170,7 @@ export const IPC = {
   dataExportAll: "data:export-all",
   dataDeleteAll: "data:delete-all",
   voiceReadRecording: "voice:read-recording",
+  voiceDeleteRecordings: "voice:delete-recordings",
   textComplete: "text:complete",
   textClaudeCodeStatus: "text:claude-code-status",
   appInfo: "app:info",

@@ -127,6 +127,10 @@ function supabaseRemote(client: SupabaseClient, userId: string): SyncRemote {
       if (error || !data) return null;
       return Buffer.from(await data.arrayBuffer());
     },
+    async deleteRecordings(names) {
+      const { error } = await client.storage.from(BUCKET).remove(names.map(path));
+      if (error) throw new Error(`Recording delete failed: ${error.message}`);
+    },
   };
 }
 

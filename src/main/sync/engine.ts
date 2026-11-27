@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import type { TrainingSession } from "@shared/training";
+import { createRecordingTrash } from "../recording-trash";
 import type { SessionStore } from "../session-store";
 import { planSync } from "./plan";
 
@@ -21,6 +22,7 @@ export interface SyncRemote {
   listRecordings(): Promise<string[]>;
   uploadRecording(name: string, data: Buffer): Promise<void>;
   downloadRecording(name: string): Promise<Buffer | null>;
+  deleteRecordings(names: string[]): Promise<void>;
 }
 
 export interface SyncResult {
@@ -62,7 +64,8 @@ export async function syncOnce({
   const downloads = remoteRows.filter((r) => plan.download.includes(r.id));
   for (const r of downloads) store.save(relinkRecordings(r.data, recordingsDir));
 
-  const files = await syncRecordings(store.list(), remote, recordingsDir);
+  const trashed = await deleteTrashedRecordings(remote, recordingsDir);
+  const files = await syncRecordings(store.list(), remote, recordingsDir, trashed);
   return {
     uploaded: uploads.length,
     downloaded: downloads.length,
@@ -71,12 +74,27 @@ export async function syncOnce({
   };
 }
 
-async function syncRecordings(sessions: TrainingSession[], remote: SyncRemote, dir: string) {
+/** Returns the names it deleted, so a session that still points at one doesn't fetch it back. */
+async function deleteTrashedRecordings(remote: SyncRemote, dir: string): Promise<Set<string>> {
+  const trash = createRecordingTrash(dir);
+  const names = trash.pending();
+  if (names.length) await remote.deleteRecordings(names);
+  trash.clear(names);
+  return new Set(names);
+}
+
+async function syncRecordings(
+  sessions: TrainingSession[],
+  remote: SyncRemote,
+  dir: string,
+  trashed: Set<string>,
+) {
   const remoteNames = new Set(await remote.listRecordings());
   let recordingsUp = 0;
   let recordingsDown = 0;
   for (const path of recordingPaths(sessions)) {
     const name = basename(path);
+    if (trashed.has(name)) continue;
     const localPath = join(dir, name);
     const here = existsSync(localPath);
     if (here && !remoteNames.has(name)) {

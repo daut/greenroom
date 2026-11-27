@@ -10,9 +10,11 @@ import {
   type Phase,
   phaseState,
   phasesOf,
+  removeRun,
   reopenSession,
   saveArtifact,
   type TrainingDefinition,
+  type VoiceRun,
 } from "./training";
 
 const def: TrainingDefinition = {
@@ -77,6 +79,44 @@ describe("saveArtifact", () => {
 
     expect(s.artifacts.setup).toEqual({ draft: true });
     expect(s.done).toEqual([]);
+  });
+});
+
+describe("removeRun", () => {
+  const voiceDef = {
+    ...def,
+    phases: [
+      { kind: "voice", id: "mock", title: "Mock" },
+      { kind: "report", id: "report", title: "Report", source: "mock" },
+      { kind: "report", id: "other", title: "Other", source: "elsewhere" },
+    ],
+  } as unknown as TrainingDefinition;
+  const run = (at: string) => ({ at, lines: [], recordingPath: null }) as unknown as VoiceRun;
+
+  const scored = {
+    ...newSession(voiceDef, "id1", T0),
+    artifacts: {
+      mock: [run("r1"), run("r2")],
+      report: { r1: { runAt: "r1" }, r2: { runAt: "r2" } },
+      other: { r1: { runAt: "r1" } },
+    },
+    done: ["mock", "report"],
+  };
+
+  it("drops the run and its report, keeps the rest", () => {
+    const s = removeRun(voiceDef, scored, "mock", "r1", T1);
+
+    expect(s.artifacts.mock).toEqual([run("r2")]);
+    expect(s.artifacts.report).toEqual({ r2: { runAt: "r2" } });
+    expect(s.artifacts.other).toEqual({ r1: { runAt: "r1" } });
+    expect(s.done).toEqual(["mock", "report"]);
+    expect(s.updatedAt).toBe(T1.toISOString());
+  });
+
+  it("works before the run is scored", () => {
+    const unscored = { ...scored, artifacts: { mock: [run("r1")] } };
+
+    expect(removeRun(voiceDef, unscored, "mock", "r1", T1).artifacts).toEqual({ mock: [] });
   });
 });
 

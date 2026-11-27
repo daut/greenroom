@@ -26,6 +26,7 @@ import { dateTime, errorMessage, formatUsd } from "../text";
 import { askStructured } from "./ask";
 import { CoachPanel } from "./CoachPanel";
 import { type CoachRequest, type CoachTarget, useCoachRequests } from "./coachRequests";
+import { DeleteRun } from "./DeleteRun";
 import { type FindingActions, FindingList, type Stamp } from "./Findings";
 import { pronunciationEstimateUsd, reviewPronunciation } from "./pronunciation";
 import { type Cue, Replay } from "./Replay";
@@ -150,6 +151,14 @@ export function ReportPhaseView({
                     {scoring !== run.at ? "Score it" : listening ? "Listening" : "Scoring"}
                   </button>
                 )}
+                <DeleteRun
+                  def={def}
+                  voicePhaseId={phase.source}
+                  run={run}
+                  update={update}
+                  disabled={scoring === run.at}
+                  onDeleted={() => open === run.at && setOpen(null)}
+                />
               </div>
               {open === run.at && (
                 <OpenRun

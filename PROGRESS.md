@@ -170,6 +170,13 @@ Handover notes for the next agent: see README "Development" and "Adding a traini
 - `npm run dev` now uses `--watch`: main/preload changes rebuild and restart Electron (ends a live call)
 - [ ] Later: a session score for loops (Home shows the first round's score, as `latestScore` reads the first report)
 
+### Delete a run (built)
+- [x] `removeRun` (TDD): drops the run and its reports (with their coach threads) from every report phase scoring it; phases stay done
+- [x] Delete link with inline confirm on the Runs list and on each report card (disabled while that run is scoring)
+- [x] Recordings (`.webm`, `.mic.webm`) deleted locally via `recording-trash.ts` (TDD, recordings folder only); names queue in `recordings/.deleted.json` and the next sync removes them from the bucket (`SyncRemote.deleteRecordings`), without fetching them back for a stale session
+- [!] Untested in the app; other devices keep their local copies of the files (no longer referenced)
+- [ ] Later: session delete and Delete all still leave recordings in the bucket; reuse the trash
+
 ### Waiting on the user
 - [!] Live voice drill / mock / presentation with an OpenAI key (also confirms the self-hang-up fix)
 - [!] Verify audio on Linux (PipeWire + PulseAudio)
@@ -181,6 +188,8 @@ Handover notes for the next agent: see README "Development" and "Adding a traini
 - [x] Min-window Drill: cost + Start moved above the question list under 640px
 
 ## Log
+
+- 2026-11-27: Delete a run, with its report, recordings and the synced copies of the recordings.
 
 - 2026-11-27: Coach sidebar: a separate conversation per correction; questions keep going in the background after closing the panel or leaving the session.
 

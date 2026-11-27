@@ -1685,6 +1685,10 @@ code {
   border-bottom: 1px solid var(--rule);
 }
 
+.script.with-actions li {
+  grid-template-columns: 140px 1fr auto;
+}
+
 .script-speaker .stamp {
   display: block;
   width: fit-content;

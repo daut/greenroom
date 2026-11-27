@@ -261,6 +261,25 @@ export function saveArtifact(
   };
 }
 
+/** Deletes a voice run and the reports on it; phases stay done. */
+export function removeRun(
+  def: TrainingDefinition,
+  session: TrainingSession,
+  voicePhaseId: string,
+  runAt: string,
+  now = new Date(),
+): TrainingSession {
+  const runs = (session.artifacts[voicePhaseId] as VoiceArtifact | undefined) ?? [];
+  const artifacts = { ...session.artifacts, [voicePhaseId]: runs.filter((r) => r.at !== runAt) };
+  for (const phase of phasesOf(def, session)) {
+    const reports = artifacts[phase.id] as Record<string, unknown> | undefined;
+    if (phase.kind !== "report" || phase.source !== voicePhaseId || !reports) continue;
+    const { [runAt]: _gone, ...rest } = reports;
+    artifacts[phase.id] = rest;
+  }
+  return { ...session, artifacts, updatedAt: now.toISOString() };
+}
+
 export function nextPhase(def: TrainingDefinition, session: TrainingSession): Phase | null {
   const phases = phasesOf(def, session);
   return phases.find((p) => stateIn(phases, session, p.id) === "ready") ?? null;
